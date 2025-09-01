@@ -1,0 +1,56 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: commit
+spec:
+  templates:
+    - name: all-steps
+      dag:
+        tasks:
+          - name: setup-environment
+            template: setup
+
+          - name: build
+            template: build-app
+            dependencies: [setup-environment]
+
+          - name: test
+            template: run-tests
+            dependencies: [build]
+
+          - name: create-artifact
+            template: package-artifact
+            dependencies: [test]
+    # 1 Sätt upp testmiljö
+    - name: setup-environment
+      container:
+        image: loftsh/vcluster:latest
+        command: [sh, -c]
+        args:
+          - |
+            export CLUSTER_NAME="commit-$(date +%Y%m%d)-$(head -c 6 /dev/urandom | xxd -p)"
+            echo "Creating vcluster: $CLUSTER_NAME"
+            vcluster create $CLUSTER_NAME --connect=false
+            echo "Waiting for vcluster to be ready..."
+            vcluster connect $CLUSTER_NAME --update-current=false -- kubectl wait --for=condition=ready nodes --all --timeout=300s
+    # 2 Bygg applikationen
+    - name: build-app
+      container:
+        image: alpine:3.18
+        command: [sh, -c]
+        args: ["echo 'Bygger applikationen...'"]
+    # 3 Kör enhetstester
+    - name: run-tests
+      container:
+        image: alpine:3.18
+        command: [sh, -c]
+        args: ["echo 'Kör enhetstester...'"]
+    # 4 Skapa artifact
+    - name: package-artifact
+      container:
+        image: alpine:3.18
+        command: [sh, -c]
+        args:
+          - |
+            VERSION=$(date +%Y%m%d)-$(git rev-parse --short HEAD)
+            echo "Creating artifact version: $VERSION"
