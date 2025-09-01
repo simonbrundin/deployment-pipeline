@@ -1,0 +1,41 @@
+name: Build and Push Docker Image to Docker Hub
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Checka ut koden från repositoryt
+      - name: Checkout code
+        uses: actions/checkout@v4
+      # Versionsnummer
+      - name: Get next version
+        uses: reecetech/version-increment@2024.10.1
+        id: version
+        with:
+          scheme: semver
+          increment: patch
+
+      - name: Bump version and push tag
+        uses: anothrNick/github-tag-action@v1 # Don't use @master or @v1 unless you're happy to test the latest version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # if you don't want to set write permissions use a PAT token
+          WITH_V: false
+          DEFAULT_BUMP: patch
+          INITIAL_VERSION: 0.0.1
+
+      # Sätt upp QEMU för multi-plattformsbyggen (valfritt, om du behöver det)
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # Sätt upp Docker Buildx för att bygga imagen
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Logga in på Docker Hub med hemligheter
