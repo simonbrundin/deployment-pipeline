@@ -11,9 +11,9 @@ spec:
       - name: github-token
       - name: repo-url
   volumes:
-    - name: plan-repo
+    - name: repo
       persistentVolumeClaim:
-        claimName: plan-repo
+        claimName: repo
 
   templates:
     - name: all-steps
@@ -62,7 +62,7 @@ spec:
                 namespace: argo-events
                 key: token
         volumeMounts:
-          - name: plan-repo
+          - name: repo
             mountPath: /src
         args:
           - |
@@ -77,7 +77,7 @@ spec:
       container:
         image: oven/bun:1
         volumeMounts:
-          - name: plan-repo
+          - name: repo
             mountPath: /src
         command: [sh, -c]
         args:
