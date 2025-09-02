@@ -19,7 +19,7 @@ spec:
             dependencies: [build]
 
           - name: create-artifact
-            template: package-artifact
+            template: create-artifact
             dependencies: [test]
     # 1 Sätt upp testmiljö
     # - name: setup-environment
