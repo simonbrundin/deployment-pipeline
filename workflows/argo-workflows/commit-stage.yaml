@@ -29,6 +29,8 @@ spec:
             dependencies: [test]
             arguments:
               parameters:
+                - name: repo-owner
+                  value: "{{workflow.parameters.repo-owner}}"
                 - name: repo-url
                   value: "{{workflow.parameters.repo-url}}"
                 - name: git-commit
