@@ -74,13 +74,12 @@ spec:
         volumeMounts:
           - name: repo
             mountPath: /src
-        workingDir: /src
+        workingDir: /
         command: [sh, -c]
         args:
           - |
             echo "Installerar paket via bun..."
             ls
-            cd src/nuxt
             bun install
         container:
           image: oven/bun:1
