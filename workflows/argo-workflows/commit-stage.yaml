@@ -11,9 +11,9 @@ spec:
       - name: github-token
       - name: repo-url
   volumes:
-    - name: work
+    - name: plan-repo
       persistentVolumeClaim:
-        claimName: workflow-commit
+        claimName: plan-repo
 
   templates:
     - name: all-steps
@@ -62,11 +62,11 @@ spec:
                 namespace: argo-events
                 key: token
         volumeMounts:
-          - name: work
+          - name: plan-repo
             mountPath: /src
-        workingDir: /src
         args:
           - |
+            cd /src
             echo "Klonar GitHub-repo..."
             git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} 
             ls
@@ -77,10 +77,9 @@ spec:
       container:
         image: oven/bun:1
         volumeMounts:
-          - name: work
+          - name: plan-repo
             mountPath: /src
         command: [sh, -c]
-        workingDir: /
         args:
           - |
             echo "Installerar paket via bun..."
