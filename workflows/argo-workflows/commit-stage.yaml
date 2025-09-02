@@ -9,9 +9,6 @@ spec:
       - name: repo-name
       - name: git-commit
       - name: github-token
-  volumes:
-    - name: repo
-      emptyDir: {}
   templates:
     - name: all-steps
       dag:
@@ -61,7 +58,7 @@ spec:
                 key: token
         volumeMounts:
           - name: repo
-            mountPath: /src
+            mountPath: /
         args:
           - |
             echo "Sätter upp miljö..."
@@ -73,7 +70,7 @@ spec:
         image: oven/bun:1
         volumeMounts:
           - name: repo
-            mountPath: /src
+            mountPath: /
         workingDir: /src/nuxt
         command: [sh, -c]
         args:
@@ -94,7 +91,7 @@ spec:
         image: oven/bun:1
         volumeMounts:
           - name: repo
-            mountPath: /src
+            mountPath: /
         workingDir: /src/nuxt
         command: [sh, -c]
         args:
@@ -107,7 +104,7 @@ spec:
         image: oven/bun:1
         volumeMounts:
           - name: repo
-            mountPath: /src
+            mountPath: /
         workingDir: /src/nuxt
         command: [sh, -c]
         args:
@@ -126,7 +123,7 @@ spec:
         image: docker:20
         volumeMounts:
           - name: repo
-            mountPath: /src
+            mountPath: /
         workingDir: /src/nuxt
         command: [sh, -c]
         args:
