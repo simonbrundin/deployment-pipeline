@@ -73,6 +73,9 @@ spec:
           - |
             echo "Klonar GitHub-repo..."
             git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} /src
+            ls
+            echo "-----------------"
+            ls src
 
     - name: bun-install
       container:
@@ -80,7 +83,6 @@ spec:
         volumeMounts:
           - name: work
             mountPath: /src
-        workingDir: /src/nuxt
         command: [sh, -c]
         args:
           - |
