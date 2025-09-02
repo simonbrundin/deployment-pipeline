@@ -72,7 +72,7 @@ spec:
         args:
           - |
             echo "Klonar GitHub-repo..."
-            git clone https://github.com/vfarcic/nu-scripts.git
+            git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} 
             ls
             echo "-----------------"
             ls src
