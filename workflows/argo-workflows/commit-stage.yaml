@@ -9,12 +9,16 @@ spec:
       - name: repo-name
       - name: git-commit
       - name: github-token
+  volumes:
+    - name: repo
+      emptyDir: {}
   templates:
     - name: all-steps
       dag:
         tasks:
-          - name: setup-environment
-            template: setup-environment
+          # Sätt upp miljö
+          - name: clone-repo
+            template: clone-repo
 
           - name: build
             template: build-app
@@ -40,12 +44,6 @@ spec:
                 - name: github-token
                   value: "{{workflow.parameters.github-token}}"
 
-    - name: setup-environment
-      steps:
-        - - name: clone-repo
-            template: clone-repo
-        - - name: build-app
-            template: build-app
     - name: clone-repo
       container:
         image: alpine/git
@@ -57,15 +55,21 @@ spec:
                 name: github-pat
                 namespace: argo-events
                 key: token
+        volumeMounts:
+          - name: repo
+            mountPath: /src
         args:
           - |
             echo "Sätter upp miljö..."
             echo "Klonar GitHub-repo..."
             git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} /src
 
-    - name: build-app
+    - name: bun-install
       container:
         image: oven/bun:1
+        volumeMounts:
+          - name: repo
+            mountPath: /src
         workingDir: /src/nuxt
         command: [sh, -c]
         args:
@@ -84,6 +88,10 @@ spec:
     - name: build-app
       container:
         image: oven/bun:1
+        volumeMounts:
+          - name: repo
+            mountPath: /src
+        workingDir: /src/nuxt
         command: [sh, -c]
         args:
           - |
@@ -93,6 +101,10 @@ spec:
     - name: run-unit-tests
       container:
         image: oven/bun:1
+        volumeMounts:
+          - name: repo
+            mountPath: /src
+        workingDir: /src/nuxt
         command: [sh, -c]
         args:
           - |
@@ -108,6 +120,10 @@ spec:
           - name: github-token
       container:
         image: docker:20
+        volumeMounts:
+          - name: repo
+            mountPath: /src
+        workingDir: /src/nuxt
         command: [sh, -c]
         args:
           - |
