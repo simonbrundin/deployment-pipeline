@@ -69,6 +69,7 @@ spec:
         volumeMounts:
           - name: work
             mountPath: /src
+        workingDir: /src
         args:
           - |
             echo "Klonar GitHub-repo..."
