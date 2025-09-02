@@ -10,15 +10,10 @@ spec:
       - name: git-commit
       - name: github-token
       - name: repo-url
-
-  volumeClaimTemplates:
-    - metadata:
-        name: work
-      spec:
-        accessModes: [ReadWriteOnce]
-        resources:
-          requests:
-            storage: 1Gi
+  volumes:
+    - name: work
+      persistentVolumeClaim:
+        claimName: workflow-commit
 
   templates:
     - name: all-steps
