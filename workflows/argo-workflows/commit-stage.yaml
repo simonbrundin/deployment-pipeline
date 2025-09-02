@@ -31,6 +31,8 @@ spec:
               parameters:
                 - name: repo-owner
                   value: "{{workflow.parameters.repo-owner}}"
+                - name: repo-name
+                  value: "{{workflow.parameters.repo-name}}"
                 - name: repo-url
                   value: "{{workflow.parameters.repo-url}}"
                 - name: git-commit
