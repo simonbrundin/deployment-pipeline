@@ -61,7 +61,7 @@ spec:
           - |
             echo "Sätter upp miljö..."
             echo "Klonar GitHub-repo..."
-            git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} /
+            git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} /src
 
     - name: build-app
       container:
