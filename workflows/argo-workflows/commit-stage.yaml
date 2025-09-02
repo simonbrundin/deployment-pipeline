@@ -61,7 +61,7 @@ spec:
                 key: token
         volumeMounts:
           - name: repo
-            mountPath: /
+            mountPath: /src
         args:
           - |
             echo "Sätter upp miljö..."
