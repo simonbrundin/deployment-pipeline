@@ -83,7 +83,7 @@ spec:
         image: oven/bun:1
         volumeMounts:
           - name: work
-            mountPath: /
+            mountPath: /src
         command: [sh, -c]
         workingDir: /
         args:
@@ -91,6 +91,8 @@ spec:
             echo "Installerar paket via bun..."
             ls
             echo "kört ls -----------------------------------"
+            ls src
+            echo "kört ls src -----------------------------------"
 
     - name: build-app
       container:
