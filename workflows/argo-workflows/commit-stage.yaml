@@ -20,17 +20,21 @@ spec:
           - name: clone-repo
             template: clone-repo
 
-          - name: build
-            template: build-app
-            dependencies: [setup-environment]
+          - name: bun-install
+            template: bun-install
+            dependencies: [clone-repo]
 
           - name: test
             template: run-unit-tests
-            dependencies: [build]
+            dependencies: [bun-install]
+
+          - name: build
+            template: build-app
+            dependencies: [test]
 
           - name: create-artifact
             template: create-artifact
-            dependencies: [test]
+            dependencies: [build]
             arguments:
               parameters:
                 - name: repo-owner
