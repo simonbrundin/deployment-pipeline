@@ -29,24 +29,48 @@ spec:
             dependencies: [test]
             arguments:
               parameters:
-                - name: repo-owner
-                  value: "{{workflow.parameters.repo-owner}}"
-                - name: repo-name
-                  value: "{{workflow.parameters.repo-name}}"
+                - name: repo-url
+                  value: "{{workflow.parameters.repo-url}}"
                 - name: git-commit
                   value: "{{workflow.parameters.git-commit}}"
                 - name: github-token
                   value: "{{workflow.parameters.github-token}}"
 
     - name: setup-environment
-      container:
-        image: oven/bun:1
-        command: [sh, -c]
-        args:
-          - |
-            echo "Sätter upp miljö..."
-            echo "Installerar paket via bun..."
-            bun install
+      steps:
+        - name: clone-repo
+          container:
+            image: alpine/git
+            command: [sh, -c]
+            env:
+              - name: GITHUB_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: github-token
+                    key: token
+            args:
+              - |
+                echo "Sätter upp miljö..."
+                echo "Klonar GitHub-repo..."
+                git clone https://$GITHUB_TOKEN@{{workflow.parametes.repo-url}} /
+
+        - name: build-app
+          container:
+            image: oven/bun:1
+            workingDir: /src
+            command: [sh, -c]
+            args:
+              - |
+                echo "Installerar paket via bun..."
+                bun install
+            container:
+              image: oven/bun:1
+              command: [sh, -c]
+              args:
+                - |
+                  echo "Sätter upp miljö..."
+                  echo "Installerar paket via bun..."
+                  bun install
 
     - name: build-app
       container:
