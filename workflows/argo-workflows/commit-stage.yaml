@@ -10,9 +10,14 @@ spec:
       - name: git-commit
       - name: github-token
       - name: repo-url
-  volumes:
-    - name: repo
-      emptyDir: {}
+  volumeClaimTemplates: # define volume, same syntax as k8s Pod spec
+    - metadata:
+        name: repo # name of volume claim
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
   templates:
     - name: all-steps
       dag:
