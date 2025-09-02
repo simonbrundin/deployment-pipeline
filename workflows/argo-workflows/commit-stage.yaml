@@ -82,3 +82,4 @@ spec:
             docker build -t ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}} .
             echo {{inputs.parameters.github-token}} | docker login ghcr.io -u {{inputs.parameters.repo-owner}} --password-stdin
             docker push ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}}
+        # sh
