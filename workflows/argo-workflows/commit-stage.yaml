@@ -74,7 +74,7 @@ spec:
         volumeMounts:
           - name: repo
             mountPath: /src
-        workingDir: /src/nuxt
+        workingDir: /
         command: [sh, -c]
         args:
           - |
