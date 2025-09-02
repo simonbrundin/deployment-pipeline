@@ -69,7 +69,6 @@ spec:
         volumeMounts:
           - name: work
             mountPath: /src
-            subPath: src
         args:
           - |
             echo "Klonar GitHub-repo..."
@@ -81,7 +80,6 @@ spec:
         volumeMounts:
           - name: work
             mountPath: /src
-            subPath: src
         workingDir: /src/nuxt
         command: [sh, -c]
         args:
@@ -96,7 +94,6 @@ spec:
         volumeMounts:
           - name: work
             mountPath: /src
-            subPath: src
         workingDir: /src/nuxt
         command: [sh, -c]
         args:
@@ -110,7 +107,6 @@ spec:
         volumeMounts:
           - name: work
             mountPath: /src
-            subPath: src
         workingDir: /src/nuxt
         command: [sh, -c]
         args:
