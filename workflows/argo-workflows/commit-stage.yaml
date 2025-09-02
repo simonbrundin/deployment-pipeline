@@ -91,12 +91,8 @@ spec:
             echo "Installerar paket via bun..."
             ls
             echo "kört ls -----------------------------------"
-            ls src
-            echo "kört ls src -----------------------------------"
-            ls mnt
-            echo "kört ls mnt -----------------------------------"
-            ls bun
-            echo "kört ls bun -----------------------------------"
+            ls home/bun
+            echo "kört ls home/bun -----------------------------------"
 
     - name: build-app
       container:
