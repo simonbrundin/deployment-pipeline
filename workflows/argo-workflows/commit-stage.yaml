@@ -79,7 +79,7 @@ spec:
         args:
           - |
             echo "Installerar paket via bun..."
-            ls
+            ls src
             echo "--ls kört--"
             bun install
 
