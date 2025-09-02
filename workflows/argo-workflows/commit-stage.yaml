@@ -10,14 +10,16 @@ spec:
       - name: git-commit
       - name: github-token
       - name: repo-url
-  volumeClaimTemplates: # define volume, same syntax as k8s Pod spec
+
+  volumeClaimTemplates:
     - metadata:
-        name: repo # name of volume claim
+        name: work
       spec:
-        accessModes: ["ReadWriteOnce"]
+        accessModes: [ReadWriteOnce]
         resources:
           requests:
             storage: 1Gi
+
   templates:
     - name: all-steps
       dag:
@@ -65,11 +67,11 @@ spec:
                 namespace: argo-events
                 key: token
         volumeMounts:
-          - name: repo
+          - name: work
             mountPath: /src
+            subPath: src
         args:
           - |
-            echo "Sätter upp miljö..."
             echo "Klonar GitHub-repo..."
             git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} /src
 
@@ -77,23 +79,23 @@ spec:
       container:
         image: oven/bun:1
         volumeMounts:
-          - name: repo
+          - name: work
             mountPath: /src
-        workingDir: /src
+            subPath: src
+        workingDir: /src/nuxt
         command: [sh, -c]
         args:
           - |
             echo "Installerar paket via bun..."
-            ls 
-            echo "--ls kört--"
             bun install
 
     - name: build-app
       container:
         image: oven/bun:1
         volumeMounts:
-          - name: repo
+          - name: work
             mountPath: /src
+            subPath: src
         workingDir: /src/nuxt
         command: [sh, -c]
         args:
@@ -105,8 +107,9 @@ spec:
       container:
         image: oven/bun:1
         volumeMounts:
-          - name: repo
+          - name: work
             mountPath: /src
+            subPath: src
         workingDir: /src/nuxt
         command: [sh, -c]
         args:
@@ -124,8 +127,9 @@ spec:
       container:
         image: docker:20
         volumeMounts:
-          - name: repo
+          - name: work
             mountPath: /src
+            subPath: src
         workingDir: /src/nuxt
         command: [sh, -c]
         args:
