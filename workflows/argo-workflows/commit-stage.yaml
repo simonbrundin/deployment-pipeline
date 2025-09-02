@@ -68,7 +68,7 @@ spec:
           - |
             cd /src
             echo "Klonar GitHub-repo..."
-            git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} 
+            git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} .
             ls
             echo "-----------------"
             ls {{workflow.parameters.repo-name}}
