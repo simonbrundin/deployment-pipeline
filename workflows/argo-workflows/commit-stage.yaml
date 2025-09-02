@@ -12,7 +12,7 @@ spec:
 
           - name: build
             template: build-app
-            dependencies: [setup-environment]
+            # dependencies: [setup-environment]
 
           - name: test
             template: run-unit-tests
