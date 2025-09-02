@@ -61,12 +61,12 @@ spec:
                 key: token
         volumeMounts:
           - name: repo
-            mountPath: /src
+            mountPath: /
         args:
           - |
             echo "Sätter upp miljö..."
             echo "Klonar GitHub-repo..."
-            git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} /
+            git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} /src
 
     - name: bun-install
       container:
