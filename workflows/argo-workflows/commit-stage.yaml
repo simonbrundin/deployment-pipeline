@@ -14,7 +14,7 @@ spec:
       dag:
         tasks:
           - name: setup-environment
-            template: setup
+            template: setup-environment
 
           - name: build
             template: build-app
