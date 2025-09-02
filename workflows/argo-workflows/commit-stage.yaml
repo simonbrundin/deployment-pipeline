@@ -73,8 +73,8 @@ spec:
         image: oven/bun:1
         volumeMounts:
           - name: repo
-            mountPath: /
-        workingDir: /src/nuxt
+            mountPath: /src
+        workingDir: /nuxt
         command: [sh, -c]
         args:
           - |
