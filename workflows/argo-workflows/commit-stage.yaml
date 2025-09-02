@@ -55,6 +55,7 @@ spec:
             valueFrom:
               secretKeyRef:
                 name: github-pat
+                namespace: argo-events
                 key: token
         args:
           - |
