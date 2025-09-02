@@ -79,12 +79,12 @@ spec:
         volumeMounts:
           - name: repo
             mountPath: /src
-        workingDir: /
+        workingDir: /src
         command: [sh, -c]
         args:
           - |
             echo "Installerar paket via bun..."
-            ls src
+            ls 
             echo "--ls kört--"
             bun install
 
