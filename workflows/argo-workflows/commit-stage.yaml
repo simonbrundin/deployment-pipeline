@@ -3,16 +3,22 @@ kind: ClusterWorkflowTemplate
 metadata:
   name: commit-stage-template
 spec:
+  arguments:
+    parameters:
+      - name: repo-owner
+      - name: repo-name
+      - name: git-commit
+      - name: github-token
   templates:
     - name: all-steps
       dag:
         tasks:
-          # - name: setup-environment
-          #   template: setup
+          - name: setup-environment
+            template: setup
 
           - name: build
             template: build-app
-            # dependencies: [setup-environment]
+            dependencies: [setup-environment]
 
           - name: test
             template: run-unit-tests
@@ -21,33 +27,58 @@ spec:
           - name: create-artifact
             template: create-artifact
             dependencies: [test]
-    # 1 Sätt upp testmiljö
-    # - name: setup-environment
-    #   container:
-    #     image: loftsh/vcluster:latest
-    #     command: [sh, -c]
-    #     args:
-    #       - |
-    #         export CLUSTER_NAME="commit-$(date +%Y%m%d)-$(head -c 6 /dev/urandom | xxd -p)"
-    #         echo "Creating vcluster: $CLUSTER_NAME"
-    #         vcluster create $CLUSTER_NAME --connect=false
-    #         echo "Waiting for vcluster to be ready..."
-    #         vcluster connect $CLUSTER_NAME --update-current=false -- kubectl wait --for=condition=ready nodes --all --timeout=300s
-    # 2 Bygg applikationen
+            arguments:
+              parameters:
+                - name: repo-owner
+                  value: "{{workflow.parameters.repo-owner}}"
+                - name: repo-name
+                  value: "{{workflow.parameters.repo-name}}"
+                - name: git-commit
+                  value: "{{workflow.parameters.git-commit}}"
+                - name: github-token
+                  value: "{{workflow.parameters.github-token}}"
+
+    - name: setup-environment
+      container:
+        image: oven/bun:1
+        command: [sh, -c]
+        args:
+          - |
+            echo "Sätter upp miljö..."
+            echo "Installerar paket via bun..."
+            bun install
+
     - name: build-app
       container:
-        image: alpine:3.18
+        image: oven/bun:1
         command: [sh, -c]
-        args: ["echo 'Bygger applikationen...'"]
-    # 3 Kör enhetstester
+        args:
+          - |
+            echo "Bygger applikationen..."
+            bun run build
+
     - name: run-unit-tests
       container:
-        image: alpine:3.18
+        image: oven/bun:1
         command: [sh, -c]
-        args: ["echo 'Kör enhetstester...'"]
-    # 4 Skapa artifact
+        args:
+          - |
+            echo "Kör unit tests..."
+            bun test
+
     - name: create-artifact
+      inputs:
+        parameters:
+          - name: repo-owner
+          - name: repo-name
+          - name: git-commit
+          - name: github-token
       container:
-        image: alpine:3.18
+        image: docker:20
         command: [sh, -c]
-        args: ["echo 'Skapar artifact...'"]
+        args:
+          - |
+            echo "Skapar image och pushar till GitHub Container Registry..."
+            docker build -t ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}} .
+            echo {{inputs.parameters.github-token}} | docker login ghcr.io -u {{inputs.parameters.repo-owner}} --password-stdin
+            docker push ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}}
