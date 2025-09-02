@@ -66,7 +66,7 @@ spec:
     - name: build-app
       container:
         image: oven/bun:1
-        workingDir: /src
+        workingDir: /src/nuxt
         command: [sh, -c]
         args:
           - |
