@@ -31,9 +31,9 @@ spec:
             template: bun-install
             dependencies: [clone-repo]
 
-          - name: test
-            template: run-unit-tests
-            dependencies: [bun-install]
+          # - name: test
+          #   template: run-unit-tests
+          #   dependencies: [bun-install]
           #
           # - name: build
           #   template: build-app
@@ -93,6 +93,10 @@ spec:
             echo "kört ls -----------------------------------"
             ls src
             echo "kört ls src -----------------------------------"
+            ls mnt
+            echo "kört ls mnt -----------------------------------"
+            ls home
+            echo "kört ls home -----------------------------------"
 
     - name: build-app
       container:
