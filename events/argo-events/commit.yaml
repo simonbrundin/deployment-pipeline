@@ -1,0 +1,61 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: commit
+spec:
+  template:
+    serviceAccountName: argo-workflow
+  dependencies:
+    - name: github
+      eventSourceName: github
+      # Detta måste matcha nyckeln du har i EventSource (i ditt exempel: "with-api-credentials")
+      eventName: with-api-credentials
+      filters:
+        data:
+          # matcha full repository name "owner/name"
+          - path: headers.X-Github-Event
+            type: string
+            value:
+              - push
+          - path: body.repository.full_name
+            type: string
+            value:
+              - simonbrundin/plan
+          # matcha branch (refs/heads/<branch>)
+          # - path: body.baseref
+          #   type: string
+          #   value:
+          #     - refs/heads/main
+          # Tsdfsdest
+  triggers:
+    - template:
+        name: argo-workflow-trigger
+        argoWorkflow:
+          operation: submit
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: commit-
+                namespace: plan
+              spec:
+                entrypoint: whalesay
+                arguments:
+                  parameters:
+                    - name: message
+                      value: hello world
+                templates:
+                  - name: whalesay
+                    inputs:
+                      parameters:
+                        - name: message
+                    container:
+                      image: docker/whalesay:latest
+                      command: [cowsay]
+                      args: ["{{inputs.parameters.message}}"]
+          parameters:
+            - src:
+                dependencyName: github
+                dataKey: body
+              dest: spec.arguments.parameters.0.value
