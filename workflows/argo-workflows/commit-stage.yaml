@@ -9,6 +9,7 @@ spec:
       - name: repo-name
       - name: git-commit
       - name: github-token
+      - name: repo-url
   volumes:
     - name: repo
       emptyDir: {}
@@ -16,7 +17,6 @@ spec:
     - name: all-steps
       dag:
         tasks:
-          # Sätt upp miljö
           - name: clone-repo
             template: clone-repo
 
@@ -74,28 +74,19 @@ spec:
         volumeMounts:
           - name: repo
             mountPath: /src
-        workingDir: /
+        workingDir: /src/nuxt
         command: [sh, -c]
         args:
           - |
             echo "Installerar paket via bun..."
-            ls
             bun install
-        container:
-          image: oven/bun:1
-          command: [sh, -c]
-          args:
-            - |
-              echo "Sätter upp miljö..."
-              echo "Installerar paket via bun..."
-              bun install
 
     - name: build-app
       container:
         image: oven/bun:1
         volumeMounts:
           - name: repo
-            mountPath: /
+            mountPath: /src
         workingDir: /src/nuxt
         command: [sh, -c]
         args:
@@ -108,7 +99,7 @@ spec:
         image: oven/bun:1
         volumeMounts:
           - name: repo
-            mountPath: /
+            mountPath: /src
         workingDir: /src/nuxt
         command: [sh, -c]
         args:
@@ -127,7 +118,7 @@ spec:
         image: docker:20
         volumeMounts:
           - name: repo
-            mountPath: /
+            mountPath: /src
         workingDir: /src/nuxt
         command: [sh, -c]
         args:
@@ -136,4 +127,3 @@ spec:
             docker build -t ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}} .
             echo {{inputs.parameters.github-token}} | docker login ghcr.io -u {{inputs.parameters.repo-owner}} --password-stdin
             docker push ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}}
-        # sh
