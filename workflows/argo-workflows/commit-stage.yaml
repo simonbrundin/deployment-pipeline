@@ -74,12 +74,13 @@ spec:
         volumeMounts:
           - name: repo
             mountPath: /src
-        workingDir: /src/nuxt
+        workingDir: /src
         command: [sh, -c]
         args:
           - |
             echo "Installerar paket via bun..."
             ls
+            echo "--ls kört--"
             bun install
 
     - name: build-app
