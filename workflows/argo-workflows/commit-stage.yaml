@@ -95,8 +95,8 @@ spec:
             echo "kört ls src -----------------------------------"
             ls mnt
             echo "kört ls mnt -----------------------------------"
-            ls home
-            echo "kört ls home -----------------------------------"
+            ls bun
+            echo "kört ls bun -----------------------------------"
 
     - name: build-app
       container:
