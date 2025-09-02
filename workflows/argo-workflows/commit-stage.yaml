@@ -80,6 +80,7 @@ spec:
           - |
             echo "Installerar paket via bun..."
             ls
+            cd src/nuxt
             bun install
         container:
           image: oven/bun:1
