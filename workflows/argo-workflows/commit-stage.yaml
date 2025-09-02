@@ -75,7 +75,7 @@ spec:
             git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} 
             ls
             echo "-----------------"
-            ls src
+            ls {{workflow.parameters.repo-name}}
 
     - name: bun-install
       container:
