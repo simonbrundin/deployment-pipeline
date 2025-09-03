@@ -10,9 +10,9 @@ spec:
       - name: git-commit
       - name: github-token
       - name: repo-url
-  volumes:
-    - name: repo
-      emptyDir: {}
+  # volumes:
+  #   - name: repo
+  #     emptyDir: {}
 
   templates:
     - name: all-steps
