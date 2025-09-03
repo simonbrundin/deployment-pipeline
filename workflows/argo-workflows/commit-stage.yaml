@@ -28,11 +28,11 @@ spec:
 
           - name: build
             template: build-app
-            dependencies: [test]
+            dependencies: [clone-repo]
 
           - name: create-artifact
             template: create-artifact
-            dependencies: [build]
+            dependencies: [build, test]
             arguments:
               parameters:
                 - name: repo-owner
