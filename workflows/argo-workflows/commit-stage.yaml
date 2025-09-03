@@ -85,9 +85,6 @@ spec:
             pwd
             ls
             echo "ls-----------------"
-            cd /src/nuxt
-            bun install
-            echo "Kör bun install"
 
     - name: bun-install
       container:
@@ -98,7 +95,7 @@ spec:
         command: [sh, -c]
         args:
           - |
-            cd /src/nuxt
+            cd /src/plan/nuxt
             bun install
             echo "Kör bun install"
         resources:
@@ -115,7 +112,7 @@ spec:
         volumeMounts:
           - name: repo
             mountPath: /src
-        workingDir: /src/nuxt
+        workingDir: /src/plan/nuxt
         command: [sh, -c]
         args:
           - |
@@ -123,9 +120,9 @@ spec:
             echo "pwd -----------------------------------"
             ls 
             echo "ls -----------------------------------"
-            cd /src/nuxt
-            ls
-            echo "ls /src/nuxt-----------------------------------"
+            # cd /src/plan/nuxt
+            # ls
+            # echo "ls /src/nuxt-----------------------------------"
             echo "Bygger applikationen..."
             bun run build
 
