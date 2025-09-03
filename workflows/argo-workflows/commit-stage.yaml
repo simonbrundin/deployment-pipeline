@@ -98,13 +98,6 @@ spec:
             cd /src/plan/nuxt
             bun install
             echo "Kör bun install"
-        resources:
-          requests:
-            memory: "2Gi"
-            cpu: "1"
-          limits:
-            memory: "3Gi"
-            cpu: "2"
 
     - name: build-app
       container:
