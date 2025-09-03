@@ -28,7 +28,7 @@ spec:
 
           - name: build
             template: build-app
-            dependencies: [clone-repo]
+            dependencies: [bun-install]
 
           - name: create-artifact
             template: create-artifact
