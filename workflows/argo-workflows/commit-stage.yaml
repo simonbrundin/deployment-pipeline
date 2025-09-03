@@ -141,6 +141,10 @@ spec:
         command: [sh, -c]
         args:
           - |
+            pwd
+            ls
+            echo "ls-----------------"
+            cd /src/nuxt
             echo "Kör unit tests..."
             bun run test
 
