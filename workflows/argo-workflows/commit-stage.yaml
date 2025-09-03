@@ -80,18 +80,11 @@ spec:
                 cd ..
             else
                 echo "Klonar GitHub-repo..."
-                git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}}
+                git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} {{workflow.parameters.repo-name}}
             fi
             pwd
             ls
             echo "ls-----------------"
-            ls /
-            echo "ls /-----------------"
-            cp -r ./plan/* /src/
-            ls /src
-            echo "ls /src-----------------"
-            ls {{workflow.parameters.repo-name}}
-            echo "ls {{workflow.parameters.repo-name}}-----------------"
             cd /src/nuxt
             bun install
             echo "Kör bun install"
