@@ -62,9 +62,11 @@ spec:
             mountPath: /src
         args:
           - |
+            pwd
             echo "Klonar GitHub-repo..."
-            git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} 
-            cp -r /plan/* /src/
+            gitbuild-kaniko-git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} 
+            pwd
+            cp -r ./plan/* /src/
             ls src
             echo "-----------------"
             ls {{workflow.parameters.repo-name}}
