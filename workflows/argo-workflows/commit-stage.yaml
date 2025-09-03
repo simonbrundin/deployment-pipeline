@@ -113,9 +113,6 @@ spec:
             echo "pwd -----------------------------------"
             ls 
             echo "ls -----------------------------------"
-            # cd /src/plan/nuxt
-            # ls
-            # echo "ls /src/nuxt-----------------------------------"
             echo "Bygger applikationen..."
             bun run build
 
@@ -125,14 +122,14 @@ spec:
         volumeMounts:
           - name: repo
             mountPath: /src
-        workingDir: /src/nuxt
+        workingDir: /src/plan/nuxt
         command: [sh, -c]
         args:
           - |
             pwd
+            echo "pwd -----------------------------------"
             ls
             echo "ls-----------------"
-            cd /src/nuxt
             echo "Kör unit tests..."
             bun run test
 
