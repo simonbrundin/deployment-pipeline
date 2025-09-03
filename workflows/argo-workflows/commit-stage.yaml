@@ -85,16 +85,12 @@ spec:
         command: [sh, -c]
         args:
           - |
-            echo "Installerar paket via bun..."
-            for dir in */; do
-              echo "Innehåll i mappen $dir:"
-              ls "$dir"
-              echo ""
-            done
+            pwd
+            echo "pwd-----------------------------------"
             ls
-            echo "kört ls -----------------------------------"
-            ls home/bun/app
-            echo "kört ls home/bun/app -----------------------------------"
+            echo "ls -----------------------------------"
+            ls /src/plan
+            echo "ls /src/plan-----------------------------------"
 
     - name: build-app
       container:
