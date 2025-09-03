@@ -78,6 +78,9 @@ spec:
             echo "ls /src-----------------"
             ls {{workflow.parameters.repo-name}}
             echo "ls {{workflow.parameters.repo-name}}-----------------"
+            cd /src/nuxt
+            bun install
+            echo "Kör bun install"
 
     - name: bun-install
       container:
