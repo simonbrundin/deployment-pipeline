@@ -10,10 +10,6 @@ spec:
       - name: git-commit
       - name: github-token
       - name: repo-url
-  volumes:
-    - name: repo
-      persistentVolumeClaim:
-        claimName: repo
 
   templates:
     - name: all-steps
