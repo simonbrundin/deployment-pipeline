@@ -64,7 +64,7 @@ spec:
           - |
             pwd
             echo "Klonar GitHub-repo..."
-            gitbuild-kaniko-git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} 
+            git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} 
             pwd
             cp -r ./plan/* /src/
             ls src
