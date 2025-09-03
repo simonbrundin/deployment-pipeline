@@ -22,13 +22,13 @@ spec:
             template: bun-install
             dependencies: [clone-repo]
 
-          # - name: test
-          #   template: run-unit-tests
-          #   dependencies: [bun-install]
-          #
-          # - name: build
-          #   template: build-app
-          #   dependencies: [test]
+          - name: test
+            template: run-unit-tests
+            dependencies: [bun-install]
+
+          - name: build
+            template: build-app
+            dependencies: [test]
           #
           # - name: create-artifact
           #   template: create-artifact
@@ -115,7 +115,7 @@ spec:
         args:
           - |
             echo "Kör unit tests..."
-            bun test
+            bun run test
 
     - name: create-artifact
       inputs:
@@ -129,7 +129,6 @@ spec:
         volumeMounts:
           - name: work
             mountPath: /src
-            subPath: src
         workingDir: /src/nuxt
         command: [sh, -c]
         args:
