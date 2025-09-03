@@ -29,22 +29,22 @@ spec:
           - name: build
             template: build-app
             dependencies: [test]
-          #
-          # - name: create-artifact
-          #   template: create-artifact
-          #   dependencies: [build]
-          #   arguments:
-          #     parameters:
-          #       - name: repo-owner
-          #         value: "{{workflow.parameters.repo-owner}}"
-          #       - name: repo-name
-          #         value: "{{workflow.parameters.repo-name}}"
-          #       - name: repo-url
-          #         value: "{{workflow.parameters.repo-url}}"
-          #       - name: git-commit
-          #         value: "{{workflow.parameters.git-commit}}"
-          #       - name: github-token
-          #         value: "{{workflow.parameters.github-token}}"
+
+          - name: create-artifact
+            template: create-artifact
+            dependencies: [build]
+            arguments:
+              parameters:
+                - name: repo-owner
+                  value: "{{workflow.parameters.repo-owner}}"
+                - name: repo-name
+                  value: "{{workflow.parameters.repo-name}}"
+                - name: repo-url
+                  value: "{{workflow.parameters.repo-url}}"
+                - name: git-commit
+                  value: "{{workflow.parameters.git-commit}}"
+                - name: github-token
+                  value: "{{workflow.parameters.github-token}}"
 
     - name: clone-repo
       container:
@@ -93,7 +93,7 @@ spec:
       container:
         image: oven/bun:1
         volumeMounts:
-          - name: work
+          - name: repo
             mountPath: /src
         workingDir: /src/nuxt
         command: [sh, -c]
@@ -108,7 +108,7 @@ spec:
       container:
         image: oven/bun:1
         volumeMounts:
-          - name: work
+          - name: repo
             mountPath: /src
         workingDir: /src/nuxt
         command: [sh, -c]
@@ -127,7 +127,7 @@ spec:
       container:
         image: docker:20
         volumeMounts:
-          - name: work
+          - name: repo
             mountPath: /src
         workingDir: /src/nuxt
         command: [sh, -c]
