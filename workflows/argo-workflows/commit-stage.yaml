@@ -85,12 +85,9 @@ spec:
         command: [sh, -c]
         args:
           - |
-            pwd
-            echo "pwd-----------------------------------"
-            ls
-            echo "ls -----------------------------------"
-            ls /src
-            echo "ls /src-----------------------------------"
+            cd /src/nuxt
+            bun install
+            echo "Kör bun install"
 
     - name: build-app
       container:
@@ -102,6 +99,8 @@ spec:
         command: [sh, -c]
         args:
           - |
+            ls
+            echo "ls -----------------------------------"
             echo "Bygger applikationen..."
             bun run build
 
