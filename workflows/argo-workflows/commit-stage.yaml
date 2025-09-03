@@ -66,6 +66,10 @@ spec:
             echo "Klonar GitHub-repo..."
             git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} 
             pwd
+            ls
+            echo "-----------------"
+            ls /
+            echo "-----------------"
             cp -r ./plan/* /src/
             ls src
             echo "-----------------"
