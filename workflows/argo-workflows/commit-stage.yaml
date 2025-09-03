@@ -62,10 +62,10 @@ spec:
             mountPath: /src
         args:
           - |
-            cd /src
             echo "Klonar GitHub-repo..."
             git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} 
-            ls
+            cp -r /plan/* /src/
+            ls src
             echo "-----------------"
             ls {{workflow.parameters.repo-name}}
 
@@ -79,7 +79,7 @@ spec:
         args:
           - |
             echo "Installerar paket via bun..."
-            for dir in /; do
+            for dir in */; do
               echo "Innehåll i mappen $dir:"
               ls "$dir"
               echo ""
