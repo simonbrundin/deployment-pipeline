@@ -93,9 +93,9 @@ spec:
           - name: repo
             mountPath: /src
         command: [sh, -c]
+        workingDir: /src/plan/nuxt
         args:
           - |
-            cd /src/plan/nuxt
             bun install
             echo "Kör bun install"
 
