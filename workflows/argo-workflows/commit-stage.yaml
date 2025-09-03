@@ -79,7 +79,7 @@ spec:
         args:
           - |
             echo "Installerar paket via bun..."
-            for dir in */; do
+            for dir in /; do
               echo "Innehåll i mappen $dir:"
               ls "$dir"
               echo ""
