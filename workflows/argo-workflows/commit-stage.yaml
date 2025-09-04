@@ -88,7 +88,7 @@ spec:
 
     - name: bun-install
       container:
-        image: oven/bun:1.2
+        image: oven/bun:latest
         volumeMounts:
           - name: repo
             mountPath: /src
