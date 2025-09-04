@@ -97,6 +97,7 @@ spec:
             pwd
             ls
             echo "ls -----------------"
+            rm -r nuxt
 
             if [ -d "{{workflow.parameters.repo-name}}" ]; then
                 echo "Repo finns redan, kör git pull..."
