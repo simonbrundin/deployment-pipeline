@@ -49,30 +49,30 @@ spec:
           - name: install-node-dependencies
             template: install-node-dependencies
             dependencies: [clone-repo]
-          #
-          # - name: test
-          #   template: run-unit-tests
-          #   dependencies: [install-node-dependencies]
-          #
-          # - name: build
-          #   template: build-app
-          #   dependencies: [install-node-dependencies]
-          #
-          # - name: create-artifact
-          #   template: create-node-artifact
-          #   dependencies: [build, test]
-          #   arguments:
-          #     parameters:
-          #       - name: repo-owner
-          #         value: "{{workflow.parameters.repo-owner}}"
-          #       - name: repo-name
-          #         value: "{{workflow.parameters.repo-name}}"
-          #       - name: repo-url
-          #         value: "{{workflow.parameters.repo-url}}"
-          #       - name: git-commit
-          #         value: "{{workflow.parameters.git-commit}}"
-          #       - name: github-token
-          #         value: "{{workflow.parameters.github-token}}"
+
+          - name: test
+            template: run-unit-tests
+            dependencies: [install-node-dependencies]
+
+          - name: build
+            template: build-app
+            dependencies: [install-node-dependencies]
+
+          - name: create-artifact
+            template: create-node-artifact
+            dependencies: [build, test]
+            arguments:
+              parameters:
+                - name: repo-owner
+                  value: "{{workflow.parameters.repo-owner}}"
+                - name: repo-name
+                  value: "{{workflow.parameters.repo-name}}"
+                - name: repo-url
+                  value: "{{workflow.parameters.repo-url}}"
+                - name: git-commit
+                  value: "{{workflow.parameters.git-commit}}"
+                - name: github-token
+                  value: "{{workflow.parameters.github-token}}"
 
     - name: clone-repo
       container:
