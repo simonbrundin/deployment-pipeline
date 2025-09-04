@@ -119,7 +119,7 @@ spec:
 
     - name: run-unit-tests
       container:
-        image: oven/bun:latest
+        image: node:lts
         volumeMounts:
           - name: repo
             mountPath: /src
@@ -132,7 +132,7 @@ spec:
             ls
             echo "ls-----------------"
             echo "Kör unit tests..."
-            bun run test
+            npm run test
 
     - name: create-artifact
       inputs:
