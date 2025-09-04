@@ -51,11 +51,11 @@ spec:
             dependencies: [clone-repo]
 
           - name: test
-            template: run-unit-tests
+            template: run-node-unit-tests
             dependencies: [install-node-dependencies]
 
           - name: build
-            template: build-app
+            template: build-node-app
             dependencies: [install-node-dependencies]
 
           - name: create-artifact
