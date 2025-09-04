@@ -123,6 +123,7 @@ spec:
         args:
           - |
             ls -a
+            rm -r node_modules
             bun install
             echo "Kör bun install"
 
