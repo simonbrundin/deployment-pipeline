@@ -96,7 +96,7 @@ spec:
         workingDir: /src/plan/nuxt
         args:
           - |
-            ls
+            ls -a
             bun install
             echo "Kör bun install"
 
