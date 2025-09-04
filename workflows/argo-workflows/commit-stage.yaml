@@ -46,9 +46,9 @@ spec:
           - name: clone-repo
             template: clone-repo
 
-          # - name: install-node-dependencies
-          #   template: install-node-dependencies
-          #   dependencies: [clone-repo]
+          - name: install-node-dependencies
+            template: install-node-dependencies
+            dependencies: [clone-repo]
           #
           # - name: test
           #   template: run-unit-tests
