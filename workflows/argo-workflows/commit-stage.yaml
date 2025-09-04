@@ -10,28 +10,20 @@ spec:
       - name: git-commit
       - name: github-token
       - name: repo-url
-  # volumes:
-  #   - name: repo
-  #     emptyDir: {}
-
   templates:
-    - name: all-steps
+    - name: backend
       dag:
         tasks:
-          - name: clone-repo
-            template: clone-repo
-
-          - name: bun-install
-            template: bun-install
-            dependencies: [clone-repo]
+          - name: install-dependencies
+            template: install-dependencies
 
           - name: test
             template: run-unit-tests
-            dependencies: [bun-install]
+            dependencies: [install-dependencies]
 
           - name: build
             template: build-app
-            dependencies: [bun-install]
+            dependencies: [install-dependencies]
 
           - name: create-artifact
             template: create-artifact
@@ -48,6 +40,35 @@ spec:
                   value: "{{workflow.parameters.git-commit}}"
                 - name: github-token
                   value: "{{workflow.parameters.github-token}}"
+    - name: frontend
+      dag:
+        tasks:
+          - name: install-node-dependencies
+            template: install-node-dependencies
+
+          # - name: test
+          #   template: run-unit-tests
+          #   dependencies: [install-dependencies]
+          #
+          # - name: build
+          #   template: build-app
+          #   dependencies: [install-dependencies]
+          #
+          # - name: create-artifact
+          #   template: create-artifact
+          #   dependencies: [build, test]
+          #   arguments:
+          #     parameters:
+          #       - name: repo-owner
+          #         value: "{{workflow.parameters.repo-owner}}"
+          #       - name: repo-name
+          #         value: "{{workflow.parameters.repo-name}}"
+          #       - name: repo-url
+          #         value: "{{workflow.parameters.repo-url}}"
+          #       - name: git-commit
+          #         value: "{{workflow.parameters.git-commit}}"
+          #       - name: github-token
+          #         value: "{{workflow.parameters.github-token}}"
 
     - name: clone-repo
       container:
@@ -86,7 +107,7 @@ spec:
             ls
             echo "ls-----------------"
 
-    - name: bun-install
+    - name: install-node-dependencies
       container:
         image: oven/bun:latest
         volumeMounts:
