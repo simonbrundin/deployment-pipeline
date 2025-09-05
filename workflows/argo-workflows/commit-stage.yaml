@@ -173,7 +173,7 @@ spec:
         volumeMounts:
           - name: repo
             mountPath: /src
-        workingDir: /src/frontend
+        workingDir: /src/plan/frontend
         command: [sh, -c]
         args:
           - |
