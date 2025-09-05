@@ -162,22 +162,52 @@ spec:
             npm run test
 
     - name: create-node-artifact
+      #   inputs:
+      #     parameters:
+      #       - name: repo-owner
+      #       - name: repo-name
+      #       - name: git-commit
+      #       - name: github-token
+      #   container:
+      #     image: docker:20
+      #     volumeMounts:
+      #       - name: repo
+      #         mountPath: /src
+      #     workingDir: /src/plan/frontend
+      #     command: [sh, -c]
+      #     args:
+      #       - |
+      #         echo "Skapar image och pushar till GitHub Container Registry..."
+      #         docker build -t ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}} .
+      #         echo $GITHUB_TOKEN | docker login ghcr.io -u {{inputs.parameters.repo-owner}} --password-stdin
+      #         docker push ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}}
+      # - name: build-and-push-frontend
       inputs:
         parameters:
           - name: repo-owner
           - name: repo-name
           - name: git-commit
-          - name: github-token
+      env:
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: github-pat
+              namespace: argo-events
+              key: token
       container:
-        image: docker:20
+        image: gcr.io/kaniko-project/executor:latest
+        workingDir: /src/plan/frontend
+        args:
+          - --context=/src/plan/frontend
+          - --dockerfile=/src/plan/frontend/Dockerfile
+          - --destination=ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}}
+          # valfritt: pusha även en rörlig tag, t.ex. "latest"
+          # - --destination=ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:latest
+          - --cache=true
+          - --snapshotMode=redo
+          - --verbosity=info
         volumeMounts:
           - name: repo
             mountPath: /src
-        workingDir: /src/plan/frontend
-        command: [sh, -c]
-        args:
-          - |
-            echo "Skapar image och pushar till GitHub Container Registry..."
-            docker build -t ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}} .
-            echo {{inputs.parameters.github-token}} | docker login ghcr.io -u {{inputs.parameters.repo-owner}} --password-stdin
-            docker push ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}}
+          - name: ghcr-creds
+            mountPath: /kaniko/.docker
