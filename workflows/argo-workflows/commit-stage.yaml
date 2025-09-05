@@ -209,5 +209,3 @@ spec:
         volumeMounts:
           - name: repo
             mountPath: /src
-          - name: ghcr-creds
-            mountPath: /kaniko/.docker
