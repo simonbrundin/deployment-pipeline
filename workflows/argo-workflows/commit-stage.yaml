@@ -206,12 +206,11 @@ spec:
         workingDir: /src/plan/frontend
         command: ["pack", "build"]
         args:
-          - |
-            hcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}} \
-              --path /src/plan/frontend \
-              --builder paketobuildpacks/builder-jammy-base \
-              --publish
-              # Du kan välja builder, tex heroku/builder:22 eller paketobuildpacks/builder:full
+          args:
+            - "ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}}"
+            - "--path /src/plan/frontend"
+            - "--builder paketobuildpacks/builder-jammy-base"
+            - "--publish"
         volumeMounts:
           - name: repo
             mountPath: /src
@@ -224,3 +223,23 @@ spec:
     #     command: ["pack", "build"]
     #     args:
     #       - "172.31.17.128:5000/my-python-app:{{inputs.parameters.passed-tag}} --path /mnt/vol/app --builder paketobuildpacks/builder-jammy-base --publish"
+    - name: git-clone
+      outputs:
+        parameters:
+          - name: tag
+            valueFrom:
+              path: /src/tag.txt
+      container:
+        image: alpine/git
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            rm -rf /src && \
+            git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} /src/{{workflow.parameters.repo-name}} && \
+            cd /src && \
+            tag=$(git describe --tags --always) && \
+            echo $tag && \
+            echo $tag > /src/tag.txt
+        volumeMounts:
+          - name: repo
+            mountPath: /src
