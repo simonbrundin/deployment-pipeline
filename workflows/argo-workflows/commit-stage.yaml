@@ -204,10 +204,10 @@ spec:
       container:
         image: buildpacksio/pack:latest
         workingDir: /src/plan/frontend
-        command: ["/bin/sh", "-c"]
+        command: ["pack", "build"]
         args:
           - |
-            pack build ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}} \
+            hcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}} \
               --path /src/plan/frontend \
               --builder paketobuildpacks/builder:full \
               --publish
@@ -215,3 +215,12 @@ spec:
         volumeMounts:
           - name: repo
             mountPath: /src
+    # - name: build-image
+    #   inputs:
+    #     parameters:
+    #       - name: passed-tag
+    #   container:
+    #     image: buildpacksio/pack
+    #     command: ["pack", "build"]
+    #     args:
+    #       - "172.31.17.128:5000/my-python-app:{{inputs.parameters.passed-tag}} --path /mnt/vol/app --builder paketobuildpacks/builder-jammy-base --publish"
