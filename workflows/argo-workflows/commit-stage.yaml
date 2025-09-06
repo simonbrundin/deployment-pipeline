@@ -244,9 +244,16 @@ spec:
         workingDir: /src
         args:
           - |
-            rm -rf /src && \
-            git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} {{workflow.parameters.repo-name}} && \
-            cd /src && \
+            if [ -d "{{workflow.parameters.repo-name}}" ]; then
+                echo "Repo finns redan, kör git pull..."
+                cd {{workflow.parameters.repo-name}}
+                git pull origin main --rebase  # eller din default branch
+                cd ..
+            else
+                echo "Klonar GitHub-repo..."
+                git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} {{workflow.parameters.repo-name}}
+            fi
+            cd /src/{{workflow.parameters.repo-name}} && \
             tag=$(git describe --tags --always) && \
             echo $tag && \
             echo $tag > /src/tag.txt
