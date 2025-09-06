@@ -43,24 +43,27 @@ spec:
     - name: frontend
       dag:
         tasks:
-          - name: clone-repo
-            template: clone-repo
+          # - name: clone-repo
+          #   template: clone-repo
 
-          - name: install-node-dependencies
-            template: install-node-dependencies
-            dependencies: [clone-repo]
+          - name: git-clone
+            template: git-clone
+
+          # - name: install-node-dependencies
+          #   template: install-node-dependencies
+          #   dependencies: [clone-repo]
 
           - name: test
             template: run-node-unit-tests
-            dependencies: [install-node-dependencies]
+            dependencies: [git-clone]
 
-          - name: build
-            template: build-node-app
-            dependencies: [install-node-dependencies]
+          # - name: build
+          #   template: build-node-app
+          #   dependencies: [install-node-dependencies]
 
           - name: create-artifact
             template: create-node-artifact
-            dependencies: [build, test]
+            dependencies: [test]
             arguments:
               parameters:
                 - name: repo-owner
@@ -73,6 +76,8 @@ spec:
                   value: "{{workflow.parameters.git-commit}}"
                 - name: github-token
                   value: "{{workflow.parameters.github-token}}"
+                - name: passed-tag
+                  value: "{{steps.git-clone.outputs.parameters.tag}}"
 
     - name: clone-repo
       container:
@@ -158,6 +163,7 @@ spec:
             echo "pwd -----------------------------------"
             ls
             echo "ls-----------------"
+            npm install
             echo "Kör unit tests..."
             npm run test
 
@@ -194,6 +200,7 @@ spec:
           - name: repo-owner
           - name: repo-name
           - name: git-commit
+          - name: passed-tag
       env:
         - name: GITHUB_TOKEN
           valueFrom:
@@ -207,7 +214,7 @@ spec:
         command: ["pack"]
         args:
           - "build"
-          - "ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}}"
+          - "ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.passed-tag}}"
           - "--path"
           - "/src/plan/frontend"
           - "--builder"
@@ -234,10 +241,11 @@ spec:
       container:
         image: alpine/git
         command: ["/bin/sh", "-c"]
+        workingDir: /src
         args:
           - |
             rm -rf /src && \
-            git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} /src/{{workflow.parameters.repo-name}} && \
+            git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} {{workflow.parameters.repo-name}} && \
             cd /src && \
             tag=$(git describe --tags --always) && \
             echo $tag && \
