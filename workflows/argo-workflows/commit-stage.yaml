@@ -209,7 +209,7 @@ spec:
           - |
             hcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}} \
               --path /src/plan/frontend \
-              --builder paketobuildpacks/builder:full \
+              --builder paketobuildpacks/builder-jammy-base \
               --publish
               # Du kan välja builder, tex heroku/builder:22 eller paketobuildpacks/builder:full
         volumeMounts:
