@@ -161,6 +161,33 @@ spec:
             echo "Kör unit tests..."
             npm run test
 
+    # - name: create-node-artifact
+    #   inputs:
+    #     parameters:
+    #       - name: repo-owner
+    #       - name: repo-name
+    #       - name: git-commit
+    #   env:
+    #     - name: GITHUB_TOKEN
+    #       valueFrom:
+    #         secretKeyRef:
+    #           name: github-pat
+    #           namespace: argo-events
+    #           key: token
+    #   container:
+    #     image: gcr.io/kaniko-project/executor:latest
+    #     workingDir: /src/plan/frontend
+    #     args:
+    #       - --context=/src/plan/frontend
+    #       - --dockerfile=/src/plan/frontend/Dockerfile
+    #       - --destination=ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}}
+    #       # valfritt: pusha även en rörlig tag, t.ex. "latest"
+    #       # - --destination=ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:latest
+    #       - --cache=true
+    #       - --verbosity=info
+    #     volumeMounts:
+    #       - name: repo
+    #         mountPath: /src
     - name: create-node-artifact
       inputs:
         parameters:
@@ -175,16 +202,16 @@ spec:
               namespace: argo-events
               key: token
       container:
-        image: gcr.io/kaniko-project/executor:latest
+        image: buildpacksio/pack:latest
         workingDir: /src/plan/frontend
+        command: ["/bin/sh", "-c"]
         args:
-          - --context=/src/plan/frontend
-          - --dockerfile=/src/plan/frontend/Dockerfile
-          - --destination=ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}}
-          # valfritt: pusha även en rörlig tag, t.ex. "latest"
-          # - --destination=ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:latest
-          - --cache=true
-          - --verbosity=info
+          - |
+            pack build ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}} \
+              --path /src/plan/frontend \
+              --builder paketobuildpacks/builder:full \
+              --publish
+              # Du kan välja builder, tex heroku/builder:22 eller paketobuildpacks/builder:full
         volumeMounts:
           - name: repo
             mountPath: /src
