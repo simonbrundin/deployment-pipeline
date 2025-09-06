@@ -77,7 +77,7 @@ spec:
                 - name: github-token
                   value: "{{workflow.parameters.github-token}}"
                 - name: passed-tag
-                  value: "{{steps.git-clone.outputs.parameters.tag}}"
+                  value: "{{tasks.git-clone.outputs.parameters.tag}}"
 
     - name: clone-repo
       container:
