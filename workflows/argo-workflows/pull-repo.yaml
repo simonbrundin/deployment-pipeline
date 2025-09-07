@@ -1,0 +1,48 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: pull-repo
+spec:
+  arguments:
+    parameters:
+      - name: repo-owner
+      - name: repo-name
+      - name: git-commit
+      - name: github-token
+      - name: repo-url
+  templates:
+    - name: pull-github
+      outputs:
+        parameters:
+          - name: tag
+            valueFrom:
+              path: /src/tag.txt
+      env:
+        - name: github_token
+          valuefrom:
+            secretkeyref:
+              name: github-pat
+              namespace: argo-events
+              key: token
+      container:
+        image: alpine/git
+        command: ["/bin/sh", "-c"]
+        workingDir: /src
+        args:
+          - |
+            if [ -d "{{workflow.parameters.repo-name}}" ]; then
+                echo "Repo finns redan, kör git pull..."
+                cd {{workflow.parameters.repo-name}}
+                git pull origin main --rebase  # eller din default branch
+                cd ..
+            else
+                echo "Klonar GitHub-repo..."
+                git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} {{workflow.parameters.repo-name}}
+            fi
+            cd /src/{{workflow.parameters.repo-name}} && \
+            tag=$(git describe --tags --always) && \
+            echo $tag && \
+            echo $tag > /src/tag.txt
+        volumeMounts:
+          - name: repo
+            mountPath: /src

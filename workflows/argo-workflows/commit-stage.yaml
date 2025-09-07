@@ -60,24 +60,27 @@ spec:
           # - name: build
           #   template: build-node-app
           #   dependencies: [install-node-dependencies]
+          - name: build
+            template: buildpack-build
+            dependencies: [git-clone]
 
-          - name: create-artifact
-            template: create-node-artifact
-            dependencies: [test]
-            arguments:
-              parameters:
-                - name: repo-owner
-                  value: "{{workflow.parameters.repo-owner}}"
-                - name: repo-name
-                  value: "{{workflow.parameters.repo-name}}"
-                - name: repo-url
-                  value: "{{workflow.parameters.repo-url}}"
-                - name: git-commit
-                  value: "{{workflow.parameters.git-commit}}"
-                - name: github-token
-                  value: "{{workflow.parameters.github-token}}"
-                - name: passed-tag
-                  value: "{{tasks.git-clone.outputs.parameters.tag}}"
+          # - name: create-artifact
+          #   template: create-node-artifact
+          #   dependencies: [test]
+          #   arguments:
+          #     parameters:
+          #       - name: repo-owner
+          #         value: "{{workflow.parameters.repo-owner}}"
+          #       - name: repo-name
+          #         value: "{{workflow.parameters.repo-name}}"
+          #       - name: repo-url
+          #         value: "{{workflow.parameters.repo-url}}"
+          #       - name: git-commit
+          #         value: "{{workflow.parameters.git-commit}}"
+          #       - name: github-token
+          #         value: "{{workflow.parameters.github-token}}"
+          #       - name: passed-tag
+          #         value: "{{tasks.git-clone.outputs.parameters.tag}}"
 
     - name: clone-repo
       container:
@@ -151,7 +154,7 @@ spec:
 
     - name: run-node-unit-tests
       container:
-        image: node:lts
+        image: node:iron-alpine
         volumeMounts:
           - name: repo
             mountPath: /src
@@ -260,3 +263,27 @@ spec:
         volumeMounts:
           - name: repo
             mountPath: /src
+    - name: dockerfile-build
+      container:
+        image: moby/buildkit:latest
+        command: ["buildctl-daemonless.sh"]
+        args:
+          - build
+          - --frontend=dockerfile.v0
+          - --local=context=.
+          - --local=dockerfile=.
+          - --output=type=image,name=my-registry/my-app:latest,push=true
+    - name: buildpack-build
+      container:
+        image: buildpacksio/pack
+        command: ["pack"]
+        volumeMounts:
+          - name: repo
+            mountPath: /src
+
+        args:
+          - build
+          - "{{workflow.parameters.image-registry}}/{{workflow.parameters.repo-name}}:{{workflow.parameters.git-commit}}"
+          - --path /src/frontend
+          - --builder paketobuildpacks/builder:base
+          - --publish
