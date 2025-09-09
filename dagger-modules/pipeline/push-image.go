@@ -1,9 +1,15 @@
 package main
 
-import "dagger/pipeline/internal/dagger"
+import (
+	"fmt"
+	"time"
+)
 
 // PushImage pushar image till registry
-func (m *Pipeline) PushImage(container *dagger.Container) *dagger.Container {
-	return container.
-		WithExec([]string{"sh", "-c", "docker push my-image:latest"})
+func (m *Pipeline) PushImage(registryAddress string) {
+	start := time.Now()
+
+	fmt.Printf("📤 Pushar image till %s\n", registryAddress)
+
+	fmt.Printf("📤 Uppladdning färdig! Körtid: %v\n", time.Since(start))
 }

@@ -40,7 +40,7 @@ func Ci() {
 	fmt.Printf("✅ Workflow completed successfully! Total time: %v\n", time.Since(startTotal))
 }
 
-func runWorkflow(ctx context.Context, client *dagger.Client, sourceDir, registryAddr, username, password string) error {
+func runWorkflow(ctx context.context, client *dagger.client, sourcedir, registryaddr, username, password string) error {
 	source := client.Host().Directory(sourceDir)
 
 	// 1. Kör tester

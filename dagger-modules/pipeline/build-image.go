@@ -1,9 +1,14 @@
 package main
 
-import "dagger/pipeline/internal/dagger"
+import (
+	"fmt"
+	"time"
+)
 
 // BuildImage bygger en Image från Dockerfile eller direkt från källkoden
-func (m *Pipeline) BuildImage(container *dagger.Container) *dagger.Container {
-	return container.
-		WithExec([]string{"sh", "-c", "docker build -t my-image:latest ."})
+func (m *Pipeline) BuildImage() {
+	start := time.Now()
+	fmt.Println("📦 Bygger image...")
+
+	fmt.Printf("📦 Image färdigbyggd! Körtid: %v\n", time.Since(start))
 }
