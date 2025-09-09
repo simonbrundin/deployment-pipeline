@@ -1,8 +1,6 @@
 {
   "name": "pipeline",
-  "description": "Delivery Pipeline",
-  "functions": ["unitTests"],
-  "version": "0.0.1",
+  "engineVersion": "v0.18.17",
   "sdk": {
     "source": "go"
   }
