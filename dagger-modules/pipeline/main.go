@@ -11,7 +11,9 @@ import (
 	"dagger.io/dagger"
 )
 
-func main() {
+type Pipeline struct{}
+
+func Ci() {
 	ctx := context.Background()
 
 	// Sätt miljövariabel för att använda BuildKit backend

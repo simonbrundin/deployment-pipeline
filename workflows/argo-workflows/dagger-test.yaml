@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dagger-ci-
+spec:
+  entrypoint: dagger-run
+  volumes:
+    - name: repo-volume
+      emptyDir: {} # Eller annan volymtyp, t.ex. gitRepo eller persistentVolumeClaim
+  templates:
+    - name: dagger-run
+      dag:
+        tasks:
+          - name: dagger-ci
+            templateRef:
+              name: dagger-ci-template
+              template: dagger-ci
+    - name: dagger-ci-template
+      container:
+        image: ghcr.io/dagger/dagger:latest
+        command: [dagger, run, go, run, .]
+        args:
+          - --source=/src
+          - --tests=true
+          - --build=true
+          - --push=false
+          - --registry=ghcr.io/your-org/your-app
+          - --username=your-username
+          - --password=$(DAGGER_REGISTRY_PASSWORD)
+        volumeMounts:
+          - name: repo-volume
+            mountPath: /src
+        env:
+          - name: DAGGER_REGISTRY_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: dagger-secrets
+                key: registry-password
