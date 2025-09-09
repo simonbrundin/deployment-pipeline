@@ -4,6 +4,8 @@ package dagger
 
 import (
 	"context"
+	"dagger/ci/internal/querybuilder"
+	"dagger/ci/internal/telemetry"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,9 +20,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
-
-	"dagger/ci/internal/querybuilder"
-	"dagger/ci/internal/telemetry"
 )
 
 func Tracer() trace.Tracer {
@@ -558,6 +557,7 @@ func (r *Binding) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *Binding) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -659,6 +659,7 @@ func (r *CacheVolume) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *CacheVolume) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -722,6 +723,7 @@ func (r *Cloud) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *Cloud) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -1322,6 +1324,7 @@ func (r *Container) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *Container) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -2688,6 +2691,7 @@ func (r *CurrentModule) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *CurrentModule) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -3101,6 +3105,7 @@ func (r *Directory) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *Directory) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -3535,6 +3540,7 @@ func (r *EnumTypeDef) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *EnumTypeDef) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -3714,6 +3720,7 @@ func (r *EnumValueTypeDef) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *EnumValueTypeDef) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -3818,6 +3825,7 @@ func (r *Env) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *Env) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -4423,6 +4431,7 @@ func (r *EnvVariable) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *EnvVariable) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -4519,6 +4528,7 @@ func (r *Error) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *Error) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -4639,6 +4649,7 @@ func (r *ErrorValue) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *ErrorValue) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -4744,6 +4755,7 @@ func (r *FieldTypeDef) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *FieldTypeDef) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -4933,6 +4945,7 @@ func (r *File) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *File) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -5251,6 +5264,7 @@ func (r *Function) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *Function) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -5458,6 +5472,7 @@ func (r *FunctionArg) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *FunctionArg) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -5566,6 +5581,7 @@ func (r *FunctionCall) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *FunctionCall) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -5725,6 +5741,7 @@ func (r *FunctionCallArgValue) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *FunctionCallArgValue) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -5830,6 +5847,7 @@ func (r *GeneratedCode) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *GeneratedCode) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -5966,6 +5984,7 @@ func (r *GitRef) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *GitRef) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -6130,6 +6149,7 @@ func (r *GitRepository) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *GitRepository) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -6319,6 +6339,7 @@ func (r *InputTypeDef) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *InputTypeDef) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -6443,6 +6464,7 @@ func (r *InterfaceTypeDef) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *InterfaceTypeDef) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -6676,6 +6698,7 @@ func (r *JSONValue) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *JSONValue) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -6855,6 +6878,7 @@ func (r *LLM) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *LLM) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -7089,6 +7113,7 @@ func (r *LLMTokenUsage) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *LLMTokenUsage) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -7189,6 +7214,7 @@ func (r *Label) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *Label) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -7286,6 +7312,7 @@ func (r *ListTypeDef) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *ListTypeDef) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -7448,6 +7475,7 @@ func (r *Module) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *Module) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -7724,6 +7752,7 @@ func (r *ModuleConfigClient) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *ModuleConfigClient) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -8029,6 +8058,7 @@ func (r *ModuleSource) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *ModuleSource) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -8464,6 +8494,7 @@ func (r *ObjectTypeDef) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *ObjectTypeDef) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -8591,6 +8622,7 @@ func (r *Port) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *Port) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -9575,6 +9607,7 @@ func (r *SDKConfig) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *SDKConfig) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -9666,6 +9699,7 @@ func (r *ScalarTypeDef) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *ScalarTypeDef) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -9783,6 +9817,7 @@ func (r *SearchResult) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *SearchResult) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -9919,6 +9954,7 @@ func (r *SearchSubmatch) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *SearchSubmatch) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -10010,6 +10046,7 @@ func (r *Secret) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *Secret) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -10173,6 +10210,7 @@ func (r *Service) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *Service) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -10380,6 +10418,7 @@ func (r *Socket) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *Socket) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -10473,6 +10512,7 @@ func (r *SourceMap) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *SourceMap) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -10575,6 +10615,7 @@ func (r *Terminal) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *Terminal) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)
@@ -10716,6 +10757,7 @@ func (r *TypeDef) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(id)
 }
+
 func (r *TypeDef) UnmarshalJSON(bs []byte) error {
 	var id string
 	err := json.Unmarshal(bs, &id)

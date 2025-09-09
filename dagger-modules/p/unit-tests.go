@@ -1,7 +1,8 @@
 package main
 
 import (
-	"dagger/pipeline/internal/dagger"
+	"dagger.io/dagger"
+	"dagger.io/dagger/dag"
 )
 
 // UnitTests kör unit tester

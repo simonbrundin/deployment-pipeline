@@ -1,6 +1,6 @@
 package main
 
-import "dagger/pipeline/internal/dagger"
+import "dagger.io/dagger"
 
 // PushImage pushar image till registry
 func (m *Pipeline) PushImage(container *dagger.Container) *dagger.Container {
