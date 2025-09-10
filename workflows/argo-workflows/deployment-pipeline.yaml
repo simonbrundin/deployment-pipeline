@@ -50,7 +50,24 @@ spec:
         image: alpine/git
         command: ["sh", "-c"]
         args:
-          - git clone https://$GITHUB_TOKEN@github.com/simonbrundin/deployment-pipeline.git /deployment-pipeline
+          - |
+            pwd
+            ls
+            echo "ls -----------------"
+            ls deployment-pipeline
+            echo "ls deployment-pipeline ----------------------"
+            if [ -d "/deployment-pipeline/.git" ]; then
+              echo "Repository already exists, pulling latest changes..."
+              cd /deployment-pipeline
+              git pull origin main
+            else
+              echo "Repository doesn't exist, cloning..."
+              git clone https://$GITHUB_TOKEN@github.com/simonbrundin/deployment-pipeline.git /deployment-pipeline
+            fi
+            ls
+            echo "ls -----------------"
+            ls deployment-pipeline
+            echo "ls deployment-pipeline ----------------------"
       volumeMounts:
         - name: deployment-pipeline
           mountPath: /deployment-pipeline
