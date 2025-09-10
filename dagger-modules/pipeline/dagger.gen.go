@@ -4,9 +4,6 @@ package main
 
 import (
 	"context"
-	"dagger/pipeline/internal/dagger"
-	"dagger/pipeline/internal/querybuilder"
-	"dagger/pipeline/internal/telemetry"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,6 +16,10 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
+
+	"dagger/pipeline/internal/dagger"
+	"dagger/pipeline/internal/querybuilder"
+	"dagger/pipeline/internal/telemetry"
 )
 
 var dag = dagger.Connect()
@@ -176,7 +177,6 @@ func dispatch(ctx context.Context) (rerr error) {
 	}
 	return nil
 }
-
 func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName string, inputArgs map[string][]byte) (_ any, err error) {
 	_ = inputArgs
 	switch parentName {
@@ -188,14 +188,63 @@ func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName st
 			if err != nil {
 				panic(fmt.Errorf("%s: %w", "failed to unmarshal parent object", err))
 			}
-			var sourceDir string
+			var sourceDir *dagger.Directory
 			if inputArgs["sourceDir"] != nil {
 				err = json.Unmarshal([]byte(inputArgs["sourceDir"]), &sourceDir)
 				if err != nil {
 					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg sourceDir", err))
 				}
 			}
-			return (*Pipeline).UnitTests(&parent, sourceDir), nil
+			return (*Pipeline).UnitTests(&parent, ctx, sourceDir)
+		case "CI":
+			var parent Pipeline
+			err = json.Unmarshal(parentJSON, &parent)
+			if err != nil {
+				panic(fmt.Errorf("%s: %w", "failed to unmarshal parent object", err))
+			}
+			var sourceDir *dagger.Directory
+			if inputArgs["sourceDir"] != nil {
+				err = json.Unmarshal([]byte(inputArgs["sourceDir"]), &sourceDir)
+				if err != nil {
+					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg sourceDir", err))
+				}
+			}
+			var registryAddress string
+			if inputArgs["registryAddress"] != nil {
+				err = json.Unmarshal([]byte(inputArgs["registryAddress"]), &registryAddress)
+				if err != nil {
+					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg registryAddress", err))
+				}
+			}
+			var imageName string
+			if inputArgs["imageName"] != nil {
+				err = json.Unmarshal([]byte(inputArgs["imageName"]), &imageName)
+				if err != nil {
+					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg imageName", err))
+				}
+			}
+			var tag string
+			if inputArgs["tag"] != nil {
+				err = json.Unmarshal([]byte(inputArgs["tag"]), &tag)
+				if err != nil {
+					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg tag", err))
+				}
+			}
+			return (*Pipeline).CI(&parent, sourceDir, registryAddress, imageName, tag)
+		case "BuildImage":
+			var parent Pipeline
+			err = json.Unmarshal(parentJSON, &parent)
+			if err != nil {
+				panic(fmt.Errorf("%s: %w", "failed to unmarshal parent object", err))
+			}
+			var sourceDir *dagger.Directory
+			if inputArgs["sourceDir"] != nil {
+				err = json.Unmarshal([]byte(inputArgs["sourceDir"]), &sourceDir)
+				if err != nil {
+					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg sourceDir", err))
+				}
+			}
+			return (*Pipeline).BuildImage(&parent, ctx, sourceDir)
 		case "PushImage":
 			var parent Pipeline
 			err = json.Unmarshal(parentJSON, &parent)
@@ -209,66 +258,65 @@ func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName st
 					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg container", err))
 				}
 			}
-			return (*Pipeline).PushImage(&parent, container), nil
-		case "CI":
-			var parent Pipeline
-			err = json.Unmarshal(parentJSON, &parent)
-			if err != nil {
-				panic(fmt.Errorf("%s: %w", "failed to unmarshal parent object", err))
-			}
-			var projectFolder string
-			if inputArgs["projectFolder"] != nil {
-				err = json.Unmarshal([]byte(inputArgs["projectFolder"]), &projectFolder)
+			var registryAddress string
+			if inputArgs["registryAddress"] != nil {
+				err = json.Unmarshal([]byte(inputArgs["registryAddress"]), &registryAddress)
 				if err != nil {
-					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg projectFolder", err))
+					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg registryAddress", err))
 				}
 			}
-			return (*Pipeline).CI(&parent, projectFolder), nil
-		case "BuildImage":
-			var parent Pipeline
-			err = json.Unmarshal(parentJSON, &parent)
-			if err != nil {
-				panic(fmt.Errorf("%s: %w", "failed to unmarshal parent object", err))
-			}
-			var container *dagger.Container
-			if inputArgs["container"] != nil {
-				err = json.Unmarshal([]byte(inputArgs["container"]), &container)
+			var imageName string
+			if inputArgs["imageName"] != nil {
+				err = json.Unmarshal([]byte(inputArgs["imageName"]), &imageName)
 				if err != nil {
-					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg container", err))
+					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg imageName", err))
 				}
 			}
-			return (*Pipeline).BuildImage(&parent, container), nil
+			var tag string
+			if inputArgs["tag"] != nil {
+				err = json.Unmarshal([]byte(inputArgs["tag"]), &tag)
+				if err != nil {
+					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg tag", err))
+				}
+			}
+			return (*Pipeline).PushImage(&parent, ctx, container, registryAddress, imageName, tag)
 		default:
 			return nil, fmt.Errorf("unknown function %s", fnName)
 		}
 	case "":
 		return dag.Module().
 			WithObject(
-				dag.TypeDef().WithObject("Pipeline", dagger.TypeDefWithObjectOpts{SourceMap: dag.SourceMap("main.go", 11, 6)}).
+				dag.TypeDef().WithObject("Pipeline", dagger.TypeDefWithObjectOpts{SourceMap: dag.SourceMap("main.go", 10, 6)}).
 					WithFunction(
 						dag.Function("UnitTests",
-							dag.TypeDef().WithObject("Container")).
+							dag.TypeDef().WithKind(dagger.TypeDefKindStringKind)).
 							WithDescription("UnitTests kör unit tester").
-							WithSourceMap(dag.SourceMap("unit-tests.go", 8, 1)).
-							WithArg("sourceDir", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("unit-tests.go", 8, 30)})).
-					WithFunction(
-						dag.Function("PushImage",
-							dag.TypeDef().WithObject("Container")).
-							WithDescription("PushImage pushar image till registry").
-							WithSourceMap(dag.SourceMap("push-image.go", 6, 1)).
-							WithArg("container", dag.TypeDef().WithObject("Container"), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("push-image.go", 6, 30)})).
+							WithSourceMap(dag.SourceMap("unit-tests.go", 11, 1)).
+							WithArg("sourceDir", dag.TypeDef().WithObject("Directory"), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("unit-tests.go", 11, 58)})).
 					WithFunction(
 						dag.Function("CI",
-							dag.TypeDef().WithObject("Container")).
+							dag.TypeDef().WithKind(dagger.TypeDefKindStringKind)).
 							WithDescription("CI kör komplett CI-workflow").
-							WithSourceMap(dag.SourceMap("main.go", 14, 1)).
-							WithArg("projectFolder", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("main.go", 14, 23)})).
+							WithSourceMap(dag.SourceMap("main.go", 13, 1)).
+							WithArg("sourceDir", dag.TypeDef().WithObject("Directory"), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("main.go", 13, 30)}).
+							WithArg("registryAddress", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("main.go", 13, 59)}).
+							WithArg("imageName", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("main.go", 13, 83)}).
+							WithArg("tag", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("main.go", 13, 101)})).
 					WithFunction(
 						dag.Function("BuildImage",
 							dag.TypeDef().WithObject("Container")).
 							WithDescription("BuildImage bygger en Image från Dockerfile eller direkt från källkoden").
-							WithSourceMap(dag.SourceMap("build-image.go", 6, 1)).
-							WithArg("container", dag.TypeDef().WithObject("Container"), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("build-image.go", 6, 31)}))), nil
+							WithSourceMap(dag.SourceMap("build-image.go", 11, 1)).
+							WithArg("sourceDir", dag.TypeDef().WithObject("Directory"), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("build-image.go", 11, 59)})).
+					WithFunction(
+						dag.Function("PushImage",
+							dag.TypeDef().WithKind(dagger.TypeDefKindStringKind)).
+							WithDescription("PushImage pushar image till registry").
+							WithSourceMap(dag.SourceMap("push-image.go", 11, 1)).
+							WithArg("container", dag.TypeDef().WithObject("Container"), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("push-image.go", 11, 58)}).
+							WithArg("registryAddress", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("push-image.go", 11, 87)}).
+							WithArg("imageName", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("push-image.go", 11, 111)}).
+							WithArg("tag", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("push-image.go", 11, 129)}))), nil
 	default:
 		return nil, fmt.Errorf("unknown object %s", parentName)
 	}

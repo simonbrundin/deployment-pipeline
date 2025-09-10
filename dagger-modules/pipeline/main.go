@@ -2,29 +2,43 @@ package main
 
 import (
 	"context"
+	"dagger/pipeline/internal/dagger"
 	"fmt"
-	"os"
 	"time"
 )
 
 type Pipeline struct{}
 
 // CI kör komplett CI-workflow
-func (m *Pipeline) CI(projectFolder string, registryAddress string) {
-	startTotal := time.Now()    // För att mäta hur lång tid allt tar
-	ctx := context.Background() // Context för att styra och avbryta Dagger-operationer
-	// Använd Buildkit som byggmotor istället för Docker. Buildkit kan till
-	// skillnad från Docker bygga både lokalt och i Kubernetes.
-	os.Setenv("DAGGER_ENGINE_BACKEND", "buildkit")
+func (pipeline *Pipeline) CI(sourceDir *dagger.Directory, registryAddress string, imageName string, tag string) (string, error) {
+	startTotal := time.Now()
+	ctx := context.Background()
+	logs := "🚀 Startar CI-workflow...\n"
 
 	// 1. Kör unit tests
-	m.UnitTests(ctx, projectFolder)
+	testLogs, err := pipeline.UnitTests(ctx, sourceDir)
+	if err != nil {
+		logs += fmt.Sprintf("❌ Fel vid körning av tester: %v\n", err)
+		return logs, err
+	}
+	logs += testLogs
 
 	// 2. Bygg image
-	m.BuildImage()
+	container, err := pipeline.BuildImage(ctx, sourceDir)
+	if err != nil {
+		logs += fmt.Sprintf("❌ Fel vid byggande av image: %v\n", err)
+		return logs, err
+	}
+	logs += "✅ Container byggd framgångsrikt\n"
 
 	// 3. Pusha image till registry
-	m.PushImage(registryAddress)
+	pushLogs, err := pipeline.PushImage(ctx, container, registryAddress, imageName, tag)
+	if err != nil {
+		logs += fmt.Sprintf("❌ Fel vid push av image: %v\n", err)
+		return logs, err
+	}
+	logs += pushLogs
 
-	fmt.Printf("✅ CI-workflow lyckades! Körtid: %v\n", time.Since(startTotal))
+	logs += fmt.Sprintf("✅ CI-workflow klar! Total körtid: %v\n", time.Since(startTotal))
+	return logs, nil
 }
