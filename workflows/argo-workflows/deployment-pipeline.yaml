@@ -67,10 +67,13 @@ spec:
         - name: source-repo
           mountPath: /source-repo
       container:
-        image: registry.dagger.io/dagger/dagger:0.18.17
+        image: alpine:3.19
         command: [sh, -c]
         args:
           - |
+            apk add --no-cache curl tar bash
+            curl -L https://github.com/dagger/dagger/releases/download/v0.18.17/dagger_v0.18.17_linux_amd64.tar.gz \
+              | tar xz -C /usr/local/bin
             cd /deployment-pipeline/dagger-modules/pipeline
             dagger call ci \
               --image-name {{workflow.parameters.repo-name}} \
@@ -94,7 +97,7 @@ spec:
                 key: token
       sidecars:
         - name: dagger-engine
-          image: registry.dagger.io/engine:v0.12.5
+          image: registry.dagger.io/engine:v0.18.17
           ports:
             - containerPort: 8080
           readinessProbe:
