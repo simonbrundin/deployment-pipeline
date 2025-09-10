@@ -12,6 +12,7 @@ spec:
       - name: registry-address
       - name: registry-username
       - name: registry-password-env
+  entrypoint: ci
   templates:
     - name: ci
       dag:
