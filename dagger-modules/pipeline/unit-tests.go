@@ -37,7 +37,7 @@ func (pipeline *Pipeline) UnitTests(ctx context.Context, sourceDir *dagger.Direc
 		logs += "ℹ️ Okänt projektspråk, hoppar över tester\n"
 	}
 
-	logs += fmt.Sprintf("✅ Tester klara! Körtid: %v\n", time.Since(start))
+	logs += fmt.Sprintf("✅ Tester klara! Körtid: %ds\n", int(time.Since(start).Seconds()))
 	return logs, nil
 }
 
@@ -56,8 +56,13 @@ func javascriptTests(ctx context.Context, source *dagger.Directory) string {
 	deps := base.WithExec([]string{"bun", "install"})
 
 	// Steg 2: kör tester
-	deps.WithExec([]string{"bun", "test"}).Sync(ctx)
-	logs += "✅ JavaScript-tester klara\n"
+	result := deps.WithExec([]string{"bun", "run", "test"})
+	stdout, err := result.Stdout(ctx)
+	if err != nil {
+		logs += fmt.Sprintf("❌ Fel vid körning av JavaScript-tester: %v\n", err)
+	} else {
+		logs += stdout
+	}
 
 	return logs
 }
@@ -86,7 +91,6 @@ func goTests(ctx context.Context, source *dagger.Directory) (string, error) {
 		logs += fmt.Sprintf("❌ Fel vid körning av Go-tester: %v\n", err)
 		return logs, err
 	}
-	logs += "✅ Go-tester klara\n"
 
 	return logs, nil
 }
@@ -107,7 +111,6 @@ func javaTests(ctx context.Context, source *dagger.Directory) (string, error) {
 		logs += fmt.Sprintf("❌ Fel vid körning av Java-tester: %v\n", err)
 		return logs, err
 	}
-	logs += "✅ Java-tester klara\n"
 
 	return logs, nil
 }

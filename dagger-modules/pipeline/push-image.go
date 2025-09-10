@@ -21,6 +21,6 @@ func (pipeline *Pipeline) PushImage(ctx context.Context, container *dagger.Conta
 		return logs, err
 	}
 
-	logs += fmt.Sprintf("✅ Uppladdning färdig! Körtid: %v\n", time.Since(start))
+	logs += fmt.Sprintf("✅ Uppladdning färdig! Körtid: %v\n", int(time.Since(start).Seconds()))
 	return logs, nil
 }

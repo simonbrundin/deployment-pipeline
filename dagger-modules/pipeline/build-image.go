@@ -33,6 +33,6 @@ func (pipeline *Pipeline) BuildImage(ctx context.Context, sourceDir *dagger.Dire
 			WithDirectory("/app", sourceDir)
 	}
 
-	logs += fmt.Sprintf("✅ Container färdigbyggd! Körtid: %v\n", time.Since(start))
+	logs += fmt.Sprintf("✅ Container färdigbyggd! Körtid: %v\n", int(time.Since(start).Seconds()))
 	return container, nil
 }
