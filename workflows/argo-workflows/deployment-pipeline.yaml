@@ -13,13 +13,6 @@ spec:
       - name: registry-username
       - name: registry-password-env
   entrypoint: ci
-  volumes:
-    - name: source-repo
-      persistentVolumeClaim:
-        claimName: plan-repo
-    - name: deployment-pipeline
-      persistentVolumeClaim:
-        claimName: deployment-pipeline
   templates:
     - name: ci
       dag:
@@ -33,6 +26,13 @@ spec:
             dependencies:
               - clone-source
               - clone-deployment
+      volumes:
+        - name: source-repo
+          persistentVolumeClaim:
+            claimName: plan-repo
+        - name: deployment-pipeline
+          persistentVolumeClaim:
+            claimName: deployment-pipeline
     - name: clone-soure-repo
       container:
         image: alpine/git
