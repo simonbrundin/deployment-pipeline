@@ -36,6 +36,7 @@ spec:
       container:
         image: alpine/git
         command: ["sh", "-c"]
+        workingDir: /source-repo
         args:
           - |
             ls /source-repo
