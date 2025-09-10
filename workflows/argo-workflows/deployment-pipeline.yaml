@@ -36,7 +36,18 @@ spec:
         image: alpine/git
         command: ["sh", "-c"]
         args:
-          - git clone https://$GITHUB_TOKEN@{{workflow.parameters.source-repo-url}} /source-repo
+          - |
+            ls /source-repo
+            if [ -d "/source-repo/.git" ]; then
+              echo "Repository already exists, pulling latest changes..."
+              cd /source-repo
+              git pull origin main
+            else
+              echo "Repository doesn't exist, cloning..."
+              git clone https://$GITHUB_TOKEN@{{workflow.parameters.source-repo-url}} /source-repo
+            fi
+            ls /source-repo
+
       volumeMounts:
         - name: source-repo
           mountPath: /source-repo
