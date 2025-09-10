@@ -23,7 +23,7 @@ func (pipeline *Pipeline) BuildImage(ctx context.Context, sourceDir *dagger.Dire
 	if dockerfileExists {
 		logs += "📄 Dockerfile hittad, bygger container från Dockerfile...\n"
 		// Bygg container från Dockerfile med Dagger
-		container = dag.Container().Build(sourceDir)
+		container = sourceDir.DockerBuild()
 	} else {
 		logs += "📦 Ingen Dockerfile, bygger standard container...\n"
 		// Bygg container från källkod - använd en enkel base image
@@ -33,6 +33,6 @@ func (pipeline *Pipeline) BuildImage(ctx context.Context, sourceDir *dagger.Dire
 			WithDirectory("/app", sourceDir)
 	}
 
-	logs += fmt.Sprintf("✅ Container färdigbyggd! Körtid: %v\n", int(time.Since(start).Seconds()))
+	logs += fmt.Sprintf("✅ Container färdigbyggd! Körtid: %ds\n", int(time.Since(start).Seconds()))
 	return container, nil
 }

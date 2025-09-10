@@ -10,8 +10,8 @@ import (
 type Pipeline struct{}
 
 // CI kör komplett CI-workflow
-func (pipeline *Pipeline) CI(sourceDir *dagger.Directory, registryAddress string, imageName string, tag string) (string, error) {
-	startTotal := time.Now()
+func (pipeline *Pipeline) CI(sourceDir *dagger.Directory, registryAddress string, imageName string, tag string, username string, secret string) (string, error) {
+	startTime := time.Now()
 	ctx := context.Background()
 	logs := "🚀 Startar CI-workflow...\n"
 
@@ -32,13 +32,13 @@ func (pipeline *Pipeline) CI(sourceDir *dagger.Directory, registryAddress string
 	logs += "✅ Container byggd framgångsrikt\n"
 
 	// 3. Pusha image till registry
-	pushLogs, err := pipeline.PushImage(ctx, container, registryAddress, imageName, tag)
+	pushLogs, err := pipeline.PushImage(ctx, container, registryAddress, imageName, tag, username, secret)
 	if err != nil {
 		logs += fmt.Sprintf("❌ Fel vid push av image: %v\n", err)
 		return logs, err
 	}
 	logs += pushLogs
 
-	logs += fmt.Sprintf("✅ CI-workflow klar! Total körtid: %v\n", time.Since(startTotal))
+	logs += fmt.Sprintf("✅ CI-workflow klar! Total körtid: %ds\n", int(time.Since(startTime).Seconds()))
 	return logs, nil
 }
