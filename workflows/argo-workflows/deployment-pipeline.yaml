@@ -54,8 +54,8 @@ spec:
             pwd
             ls
             echo "ls -----------------"
-            ls deployment-pipeline
-            echo "ls deployment-pipeline ----------------------"
+            ls /deployment-pipeline
+            echo "ls /deployment-pipeline ----------------------"
             if [ -d "/deployment-pipeline/.git" ]; then
               echo "Repository already exists, pulling latest changes..."
               cd /deployment-pipeline
@@ -66,8 +66,8 @@ spec:
             fi
             ls
             echo "ls -----------------"
-            ls deployment-pipeline
-            echo "ls deployment-pipeline ----------------------"
+            ls /deployment-pipeline
+            echo "ls /deployment-pipeline ----------------------"
       volumeMounts:
         - name: deployment-pipeline
           mountPath: /deployment-pipeline
