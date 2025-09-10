@@ -21,10 +21,11 @@ spec:
             template: clone-soure-repo
           - name: clone-deployment
             template: clone-deployment-pipeline
+            dependencies:
+              - clone-source
           - name: ci
             template: dagger-ci
             dependencies:
-              - clone-source
               - clone-deployment
       volumeMounts:
         - name: source-repo
