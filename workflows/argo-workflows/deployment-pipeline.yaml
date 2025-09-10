@@ -1,0 +1,59 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: deployment-pipeline
+spec:
+  arguments:
+    parameters:
+      - name: source-folder
+      - name: tag
+      - name: source-repo-url
+      - name: registry-address
+      - name: registry-username
+      - name: registry-password
+  templates:
+    - name: ci
+      volumeMounts:
+        - name: deployment-pipeline
+          mountPath: /deployment-pipeline
+        - name: source-repo
+          mountPath: /source-repo
+      container:
+        image: registry.dagger.io/dagger/dagger:0.18.17
+        command: [sh, -c]
+        args:
+          - |
+            git clone {{workflow.parameters.source-repo-url}} /source-repo
+            git clone https://github.com/simonbrundin/deployment-pipeline.git /deployment-pipeline
+            cd /deployment-pipeline/dagger-modules/pipeline
+            dagger call ci
+              --image-name {{workflow.parameters.repo-name}} 
+              --registry-address {{workflow.parameters.registry-address}}
+              --source-dir /source-repo/{{workflow.parameters.source-folder}}
+              --tag {{workflow.parameters.tag}}
+              --username {{workflow.parameters.registry-username}} 
+              --secret {{workflow.parameters.registry-password}}
+        env:
+          - name: DAGGER_SESSION_HOST
+            value: "127.0.0.1:8080"
+          - name: DAGGER_CLOUD_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: dagger-cloud
+                key: token
+          - name: GITHUB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: github-pat
+                key: token
+      sidecars:
+        - name: dagger-engine
+          image: registry.dagger.io/engine:v0.12.5
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /query
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 2
