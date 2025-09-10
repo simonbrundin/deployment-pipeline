@@ -26,13 +26,11 @@ spec:
             dependencies:
               - clone-source
               - clone-deployment
-      volumes:
+      volumeMounts:
         - name: source-repo
-          persistentVolumeClaim:
-            claimName: plan-repo
+          mountPath: /source-repo
         - name: deployment-pipeline
-          persistentVolumeClaim:
-            claimName: deployment-pipeline
+          mountPath: /deployment-pipeline
     - name: clone-soure-repo
       container:
         image: alpine/git
