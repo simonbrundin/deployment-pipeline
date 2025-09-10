@@ -7,6 +7,7 @@ spec:
     parameters:
       - name: source-folder
       - name: tag
+      - name: repo-name
       - name: source-repo-url
       - name: registry-address
       - name: registry-username
@@ -23,8 +24,8 @@ spec:
         command: [sh, -c]
         args:
           - |
-            git clone {{workflow.parameters.source-repo-url}} /source-repo
-            git clone https://github.com/simonbrundin/deployment-pipeline.git /deployment-pipeline
+            git clone https://$GITHUB_TOKEN@{{workflow.parameters.source-repo-url}} /source-repo
+            git clone https://$GITHUB_TOKEN@github.com/simonbrundin/deployment-pipeline.git /deployment-pipeline
             cd /deployment-pipeline/dagger-modules/pipeline
             dagger call ci
               --image-name {{workflow.parameters.repo-name}} 
