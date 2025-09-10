@@ -13,6 +13,10 @@ spec:
       - name: registry-username
       - name: registry-password-env
   entrypoint: ci
+  volumes:
+    - name: deployment-pipeline
+      persistentVolumeClaim:
+        claimName: deployment-pipeline
   templates:
     - name: ci
       dag:
