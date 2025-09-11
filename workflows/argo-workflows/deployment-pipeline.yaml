@@ -97,7 +97,7 @@ spec:
             apk add --no-cache curl tar bash
             curl -L https://github.com/dagger/dagger/releases/download/v0.18.17/dagger_v0.18.17_linux_arm64.tar.gz \
               | tar xz -C /usr/local/bin
-            cd /deployment-pipeline/dagger-modules/pipeline
+            cd /deployment-pipeline/deployment-pipeline/dagger-modules/pipeline
             dagger call ci \
               --image-name {{workflow.parameters.repo-name}} \
               --registry-address {{workflow.parameters.registry-address}} \
