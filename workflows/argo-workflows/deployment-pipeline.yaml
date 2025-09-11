@@ -110,6 +110,8 @@ spec:
             mountPath: /deployment-pipeline
           - name: source-repo
             mountPath: /source-repo
+          - mountPath: /run/dagger
+            name: dagger-socket
         env:
           # - name: DAGGER_SESSION_HOST
           #   value: "dagger-engine.dagger.svc.cluster.local:8080"
@@ -129,19 +131,18 @@ spec:
                 key: token
       sidecars:
         - name: dagger-engine
-          image: registry.dagger.io/engine:v0.18.17
-          command: ["/usr/local/bin/dagger-engine"] # 👈 bypassar entrypoint.sh
-          args: ["--config", "/etc/dagger/engine.toml"]
-          ports:
-            - containerPort: 8080
-          readinessProbe:
-            httpGet:
-              path: /query
-              port: 8080
-            initialDelaySeconds: 2
-            periodSeconds: 2
+          # replace with the latest available version of Dagger for your platform
+          image: registry.dagger.io/engine:v0.18.16
           securityContext:
             privileged: true
             capabilities:
               add:
                 - ALL
+          readinessProbe:
+            exec:
+              command: ["dagger", "core", "version"]
+          volumeMounts:
+            - mountPath: /run/dagger
+              name: dagger-socket
+            - mountPath: /var/lib/dagger
+              name: dagger-storage
