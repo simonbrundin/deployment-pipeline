@@ -34,12 +34,14 @@ spec:
         args:
           - |
             ls /source-repo
-            if [ -d "/source-repo/.git" ]; then
-              echo "Repository already exists, pulling latest changes..."
-              git pull origin main
+            if [ -d "{{workflow.parameters.repo-name}}" ]; then
+                echo "Repo finns redan, kör git pull..."
+                cd {{workflow.parameters.repo-name}}
+                git pull origin main --rebase  # eller din default branch
+                cd ..
             else
               echo "Repository doesn't exist, cloning..."
-              git clone https://$GITHUB_TOKEN@{{workflow.parameters.source-repo-url}} /source-repo
+              git clone https://$GITHUB_TOKEN@{{workflow.parameters.source-repo-url}} {{workflow.parameters.repo-name}}
             fi
             ls /source-repo
 
@@ -64,12 +66,14 @@ spec:
             echo "ls -----------------"
             ls /deployment-pipeline
             echo "ls /deployment-pipeline ----------------------"
-            if [ -d "/deployment-pipeline/.git" ]; then
-              echo "Repository already exists, pulling latest changes..."
-              git pull origin main
+            if [ -d "deployment-pipeline" ]; then
+                echo "Repo finns redan, kör git pull..."
+                cd deployment-pipeline
+                git pull origin main --rebase  # eller din default branch
+                cd ..
             else
               echo "Repository doesn't exist, cloning..."
-              git clone https://$GITHUB_TOKEN@github.com/simonbrundin/deployment-pipeline.git /deployment-pipeline
+              git clone https://$GITHUB_TOKEN@github.com/simonbrundin/deployment-pipeline.git deployment-pipeline
             fi
             ls
             echo "ls -----------------"
