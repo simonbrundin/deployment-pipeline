@@ -4,6 +4,9 @@ package main
 
 import (
 	"context"
+	"dagger/pipeline/internal/dagger"
+	"dagger/pipeline/internal/querybuilder"
+	"dagger/pipeline/internal/telemetry"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,10 +19,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
-
-	"dagger/pipeline/internal/dagger"
-	"dagger/pipeline/internal/querybuilder"
-	"dagger/pipeline/internal/telemetry"
 )
 
 var dag = dagger.Connect()
@@ -177,6 +176,7 @@ func dispatch(ctx context.Context) (rerr error) {
 	}
 	return nil
 }
+
 func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName string, inputArgs map[string][]byte) (_ any, err error) {
 	_ = inputArgs
 	switch parentName {
