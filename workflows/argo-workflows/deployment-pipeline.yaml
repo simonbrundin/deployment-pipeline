@@ -112,7 +112,7 @@ spec:
             mountPath: /source-repo
         env:
           - name: DAGGER_SESSION_HOST
-            value: "dagger-engine:8080" # 👈 Ändra till service-namnet
+            value: "dagger-engine.dagger.svc.cluster.local:8080"
           # - name: DAGGER_SESSION_HOST
           #   value: "127.0.0.1:8080"
           - name: DAGGER_CLOUD_TOKEN
