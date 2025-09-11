@@ -1,0 +1,390 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: commit
+spec:
+  template:
+    serviceAccountName: argo-workflow
+  dependencies:
+    - name: push
+      eventSourceName: github
+      eventName: with-api-credentials
+      filters:
+        data:
+          - path: headers.X-Github-Event
+            type: string
+            value: ["push"]
+          - path: body.repository.full_name
+            type: string
+            value: ["simonbrundin/plan"]
+    - name: frontend
+      eventSourceName: github
+      eventName: with-api-credentials
+      filters:
+        dataLogicalOperator: "or"
+        data:
+          - path: '[body.commits.#.modified.#(%"*frontend*")#,body.commits.#.added.#(%"*frontend*")#,body.commits.#.removed.#(%"*frontend*")#]'
+            type: string
+            value:
+              - "(\\bfrontend/*)"
+
+  triggers:
+    - template:
+        name: argo-workflow-trigger
+        argoWorkflow:
+          operation: submit
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: commit-stage-
+                namespace: argo-events
+              spec:
+                entrypoint: entrypoint
+                arguments:
+                  parameters:
+                    - name: repo-url
+                      value: "github.com/simonbrundin/plan.git"
+                    - name: git-commit
+                      value: ""
+                    - name: github-token
+                      value: "ditt-github-token"
+                    - name: repo-owner
+                      value: "simonbrundin"
+                    - name: repo-name
+                      value: "plan"
+                    # testssd
+                # volumeClaimTemplates: # define volume, same syntax as k8s Pod spec
+                #   - metadata:
+                #       name: repo # name of volume claim
+                #     spec:
+                #       accessModes: ["ReadWriteMany"]
+                #       resources:
+                #         requests:
+                #           storage: 2Gi
+                volumes:
+                  - name: repo
+                    persistentVolumeClaim:
+                      claimName: repo
+                # volumes:
+                #   - name: repo
+                #     emptyDir: {}
+                templates:
+                  - name: entrypoint
+                    dag:
+                      tasks:
+                        # - name: clone-repo
+                        #   templateRef:
+                        #     name: commit-stage-template
+                        #     template: clone-repo
+                        #     clusterScope: true
+                        - name: frontend
+                          templateRef:
+                            name: commit-stage-template
+                            template: frontend
+                            clusterScope: true
+                          arguments:
+                            parameters:
+                              - name: repo-owner
+                                value: "{{workflow.parameters.repo-owner}}"
+                              - name: repo-name
+                                value: "{{workflow.parameters.repo-name}}"
+                              - name: repo-url
+                                value: "{{workflow.parameters.repo-url}}"
+                              - name: git-commit
+                                value: "{{workflow.parameters.git-commit}}"
+                              - name: github-token
+                                value: "{{workflow.parameters.github-token}}"
+
+                    # steps: # You should only reference external "templates" in a "steps" or "dag" "template".
+                    #   - - name: start
+                    #       templateRef:
+                    #         name: commit-stage-template
+                    #         template: clone-repo
+                    #         clusterScope: true
+                    #       arguments:
+                    #         parameters:
+                    #           - name: repo-name
+                    #             value: "{{workflow.parameters.repo-name}}"
+                    #           - name: repo-url
+                    #             value: "{{workflow.parameters.repo-url}}"
+                    #           - name: github-token
+                    #             value: "{{workflow.parameters.github-token}}"
+                    #           - name: git-commit
+                    #             value: "{{workflow.parameters.git-commit}}"
+      parameters:
+        - src:
+            dependencyName: push
+            dataKey: body.head_commit.id
+          dest: spec.arguments.parameters.git-commit.value
+          # aa
+          #
+          #
+          #
+          #
+          #
+          #
+          #
+          #
+          #
+          #
+          #
+          #
+          #
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: commit-stage-template
+spec:
+  arguments:
+    parameters:
+      - name: repo-owner
+      - name: repo-name
+      - name: git-commit
+      - name: github-token
+      - name: repo-url
+  templates:
+    - name: backend
+      dag:
+        tasks:
+          - name: install-dependencies
+            template: install-dependencies
+
+          - name: test
+            template: run-unit-tests
+            dependencies: [install-dependencies]
+
+          - name: build
+            template: build-app
+            dependencies: [install-dependencies]
+
+          - name: create-artifact
+            template: create-artifact
+            dependencies: [build, test]
+            arguments:
+              parameters:
+                - name: repo-owner
+                  value: "{{workflow.parameters.repo-owner}}"
+                - name: repo-name
+                  value: "{{workflow.parameters.repo-name}}"
+                - name: repo-url
+                  value: "{{workflow.parameters.repo-url}}"
+                - name: git-commit
+                  value: "{{workflow.parameters.git-commit}}"
+                - name: github-token
+                  value: "{{workflow.parameters.github-token}}"
+    - name: frontend
+      dag:
+        tasks:
+          # - name: clone-repo
+          #   template: clone-repo
+
+          - name: git-clone
+            template: git-clone
+
+          # - name: install-node-dependencies
+          #   template: install-node-dependencies
+          #   dependencies: [clone-repo]
+
+          - name: test
+            template: run-node-unit-tests
+            dependencies: [git-clone]
+
+          # - name: build
+          #   template: build-node-app
+          #   dependencies: [install-node-dependencies]
+
+          - name: create-artifact
+            template: create-node-artifact
+            dependencies: [test]
+            arguments:
+              parameters:
+                - name: repo-owner
+                  value: "{{workflow.parameters.repo-owner}}"
+                - name: repo-name
+                  value: "{{workflow.parameters.repo-name}}"
+                - name: repo-url
+                  value: "{{workflow.parameters.repo-url}}"
+                - name: git-commit
+                  value: "{{workflow.parameters.git-commit}}"
+                - name: github-token
+                  value: "{{workflow.parameters.github-token}}"
+                - name: passed-tag
+                  value: "{{steps.git-clone.outputs.parameters.tag}}"
+
+    - name: clone-repo
+      container:
+        image: alpine/git
+        command: [sh, -c]
+        env:
+          - name: GITHUB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: github-pat
+                namespace: argo-events
+                key: token
+        volumeMounts:
+          - name: repo
+            mountPath: /src
+        args:
+          - |
+            pwd
+
+            echo "Kollar om repo redan finns..."
+            cd /src
+            pwd
+            ls
+            echo "ls -----------------"
+            # rm -r plan
+
+            if [ -d "{{workflow.parameters.repo-name}}" ]; then
+                echo "Repo finns redan, kör git pull..."
+                cd {{workflow.parameters.repo-name}}
+                git pull origin main --rebase  # eller din default branch
+                cd ..
+            else
+                echo "Klonar GitHub-repo..."
+                git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} {{workflow.parameters.repo-name}}
+            fi
+            pwd
+            ls
+            echo "ls-----------------"
+
+    - name: install-node-dependencies
+      container:
+        image: oven/bun:latest
+        volumeMounts:
+          - name: repo
+            mountPath: /src
+        command: [sh, -c]
+        workingDir: /src/plan/frontend
+        args:
+          - |
+            ls -a
+            # rm -r node_modules
+            bun install
+            echo "Kör bun install"
+
+    - name: build-node-app
+      container:
+        image: oven/bun:latest
+        volumeMounts:
+          - name: repo
+            mountPath: /src
+        workingDir: /src/plan/frontend
+        command: [sh, -c]
+        args:
+          - |
+            pwd
+            echo "pwd -----------------------------------"
+            ls 
+            echo "ls -----------------------------------"
+            echo "Bygger applikationen..."
+            bun run build
+
+    - name: run-node-unit-tests
+      container:
+        image: node:lts
+        volumeMounts:
+          - name: repo
+            mountPath: /src
+        workingDir: /src/plan/frontend
+        command: [sh, -c]
+        args:
+          - |
+            pwd
+            echo "pwd -----------------------------------"
+            ls
+            echo "ls-----------------"
+            npm install
+            echo "Kör unit tests..."
+            npm run test
+
+    # - name: create-node-artifact
+    #   inputs:
+    #     parameters:
+    #       - name: repo-owner
+    #       - name: repo-name
+    #       - name: git-commit
+    #   env:
+    #     - name: GITHUB_TOKEN
+    #       valueFrom:
+    #         secretKeyRef:
+    #           name: github-pat
+    #           namespace: argo-events
+    #           key: token
+    #   container:
+    #     image: gcr.io/kaniko-project/executor:latest
+    #     workingDir: /src/plan/frontend
+    #     args:
+    #       - --context=/src/plan/frontend
+    #       - --dockerfile=/src/plan/frontend/Dockerfile
+    #       - --destination=ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.git-commit}}
+    #       # valfritt: pusha även en rörlig tag, t.ex. "latest"
+    #       # - --destination=ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:latest
+    #       - --cache=true
+    #       - --verbosity=info
+    #     volumeMounts:
+    #       - name: repo
+    #         mountPath: /src
+    - name: create-node-artifact
+      inputs:
+        parameters:
+          - name: repo-owner
+          - name: repo-name
+          - name: git-commit
+          - name: passed-tag
+      env:
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: github-pat
+              namespace: argo-events
+              key: token
+      container:
+        image: buildpacksio/pack:latest
+        workingDir: /src/plan/frontend
+        command: ["pack"]
+        args:
+          - "build"
+          - "ghcr.io/{{inputs.parameters.repo-owner}}/{{inputs.parameters.repo-name}}:{{inputs.parameters.passed-tag}}"
+          - "--path"
+          - "/src/plan/frontend"
+          - "--builder"
+          - "paketobuildpacks/builder-jammy-base"
+          - "--publish"
+        volumeMounts:
+          - name: repo
+            mountPath: /src
+    # - name: build-image
+    #   inputs:
+    #     parameters:
+    #       - name: passed-tag
+    #   container:
+    #     image: buildpacksio/pack
+    #     command: ["pack", "build"]
+    #     args:
+    #       - "172.31.17.128:5000/my-python-app:{{inputs.parameters.passed-tag}} --path /mnt/vol/app --builder paketobuildpacks/builder-jammy-base --publish"
+    - name: git-clone
+      outputs:
+        parameters:
+          - name: tag
+            valueFrom:
+              path: /src/tag.txt
+      container:
+        image: alpine/git
+        command: ["/bin/sh", "-c"]
+        workingDir: /src
+        args:
+          - |
+            rm -rf /src && \
+            git clone https://$GITHUB_TOKEN@{{workflow.parameters.repo-url}} {{workflow.parameters.repo-name}} && \
+            cd /src && \
+            tag=$(git describe --tags --always) && \
+            echo $tag && \
+            echo $tag > /src/tag.txt
+        volumeMounts:
+          - name: repo
+            mountPath: /src
+
