@@ -112,7 +112,9 @@ spec:
             mountPath: /source-repo
         env:
           - name: DAGGER_SESSION_HOST
-            value: "127.0.0.1:8080"
+            value: "dagger-engine:8080" # 👈 Ändra till service-namnet
+          # - name: DAGGER_SESSION_HOST
+          #   value: "127.0.0.1:8080"
           - name: DAGGER_CLOUD_TOKEN
             valueFrom:
               secretKeyRef:
@@ -123,17 +125,17 @@ spec:
               secretKeyRef:
                 name: github-pat
                 key: token
-      sidecars:
-        - name: dagger-engine
-          image: registry.dagger.io/engine:v0.18.17
-          command: ["/usr/local/bin/dagger-engine"]     # 👈 bypassar entrypoint.sh
-          args: ["--config", "/etc/dagger/engine.toml"]
-          ports:
-            - containerPort: 8080
-          readinessProbe:
-            httpGet:
-              path: /query
-              port: 8080
-            initialDelaySeconds: 2
-            periodSeconds: 2
-            periodSeconds: 2
+      # sidecars:
+      #   - name: dagger-engine
+      #     image: registry.dagger.io/engine:v0.18.17
+      #     command: ["/usr/local/bin/dagger-engine"]     # 👈 bypassar entrypoint.sh
+      #     args: ["--config", "/etc/dagger/engine.toml"]
+      #     ports:
+      #       - containerPort: 8080
+      #     readinessProbe:
+      #       httpGet:
+      #         path: /query
+      #         port: 8080
+      #       initialDelaySeconds: 2
+      #       periodSeconds: 2
+      #       periodSeconds: 2
