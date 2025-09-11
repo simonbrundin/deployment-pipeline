@@ -87,11 +87,6 @@ spec:
               name: github-pat
               key: token
     - name: dagger-ci
-      volumeMounts:
-        - name: deployment-pipeline
-          mountPath: /deployment-pipeline
-        - name: source-repo
-          mountPath: /source-repo
       container:
         image: alpine:3.19
         command: [sh, -c]
@@ -108,6 +103,11 @@ spec:
               --tag {{workflow.parameters.tag}} \
               --username {{workflow.parameters.registry-username}} \
               --secret ${{workflow.parameters.registry-password-env}}
+        volumeMounts:
+          - name: deployment-pipeline
+            mountPath: /deployment-pipeline
+          - name: source-repo
+            mountPath: /source-repo
         env:
           - name: DAGGER_SESSION_HOST
             value: "127.0.0.1:8080"
