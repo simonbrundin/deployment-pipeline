@@ -54,10 +54,6 @@ spec:
               --username {{workflow.parameters.registry-username}} \
               --secret ${{workflow.parameters.registry-password-env}}
         volumeMounts:
-          - name: deployment-pipeline
-            mountPath: /deployment-pipeline
-          - name: source-repo
-            mountPath: /source-repo
           - mountPath: /run/dagger
             name: dagger-socket
         env:
