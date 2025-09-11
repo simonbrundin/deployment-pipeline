@@ -98,8 +98,6 @@ spec:
             curl -L https://github.com/dagger/dagger/releases/download/v0.18.17/dagger_v0.18.17_linux_arm64.tar.gz \
               | tar xz -C /usr/local/bin
             cd /deployment-pipeline/deployment-pipeline/dagger-modules/pipeline
-            echo "🏗️ testar anslutning till engine..."
-            curl -v dagger-engine.dagger:8080/query
             dagger call ci \
               --image-name {{workflow.parameters.repo-name}} \
               --registry-address {{workflow.parameters.registry-address}} \
@@ -113,10 +111,10 @@ spec:
           - name: source-repo
             mountPath: /source-repo
         env:
-          - name: DAGGER_SESSION_HOST
-            value: "dagger-engine.dagger.svc.cluster.local:8080"
           # - name: DAGGER_SESSION_HOST
-          #   value: "127.0.0.1:8080"
+          #   value: "dagger-engine.dagger.svc.cluster.local:8080"
+          - name: DAGGER_SESSION_HOST
+            value: "127.0.0.1:8080"
           - name: DAGGER_CLOUD_TOKEN
             valueFrom:
               secretKeyRef:
@@ -127,17 +125,21 @@ spec:
               secretKeyRef:
                 name: github-pat
                 key: token
-      # sidecars:
-      #   - name: dagger-engine
-      #     image: registry.dagger.io/engine:v0.18.17
-      #     command: ["/usr/local/bin/dagger-engine"]     # 👈 bypassar entrypoint.sh
-      #     args: ["--config", "/etc/dagger/engine.toml"]
-      #     ports:
-      #       - containerPort: 8080
-      #     readinessProbe:
-      #       httpGet:
-      #         path: /query
-      #         port: 8080
-      #       initialDelaySeconds: 2
-      #       periodSeconds: 2
-      #       periodSeconds: 2
+      sidecars:
+        - name: dagger-engine
+          image: registry.dagger.io/engine:v0.18.17
+          command: ["/usr/local/bin/dagger-engine"] # 👈 bypassar entrypoint.sh
+          args: ["--config", "/etc/dagger/engine.toml"]
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /query
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 2
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - ALL
