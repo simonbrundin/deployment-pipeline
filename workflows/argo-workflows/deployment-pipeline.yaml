@@ -126,6 +126,8 @@ spec:
       sidecars:
         - name: dagger-engine
           image: registry.dagger.io/engine:v0.18.17
+          command: ["/usr/local/bin/dagger-engine"]     # 👈 bypassar entrypoint.sh
+          args: ["--config", "/etc/dagger/engine.toml"]
           ports:
             - containerPort: 8080
           readinessProbe:
@@ -133,4 +135,5 @@ spec:
               path: /query
               port: 8080
             initialDelaySeconds: 2
+            periodSeconds: 2
             periodSeconds: 2
