@@ -26,7 +26,7 @@ spec:
             path: /source-repo
             git:
               # replace with your repository URL
-              repo: https://simonbrundin:$GITHUB_TOKEN@{{workflow.parameters.source-repo-url}}
+              repo: https://{{workflow.parameters.source-repo-url}}
               revision: "main"
               usernameSecret:
                 name: github-pat
@@ -38,7 +38,7 @@ spec:
             path: /deployment-pipeline
             git:
               # replace with your repository URL
-              repo: https://simonbrundin:$GITHUB_TOKEN@github.com/simonbrundin/deployment-pipeline.git
+              repo: https://github.com/simonbrundin/deployment-pipeline.git
               revision: "main"
               usernameSecret:
                 name: github-pat
