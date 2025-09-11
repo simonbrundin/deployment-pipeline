@@ -51,7 +51,7 @@ spec:
             mode: 0755
             http:
               # replace with the latest available version of Dagger for your platform
-              url: https://github.com/dagger/dagger/releases/download/v0.18.16/dagger_v0.18.16_linux_arm64.tar.gz
+              url: https://github.com/dagger/dagger/releases/download/v0.18.16/dagger_v0.18.17_linux_arm64.tar.gz
       container:
         image: alpine:3.19
         command: [sh, -c]
@@ -88,7 +88,7 @@ spec:
       sidecars:
         - name: dagger-engine
           # replace with the latest available version of Dagger for your platform
-          image: registry.dagger.io/engine:v0.18.16
+          image: registry.dagger.io/engine:v0.18.17
           securityContext:
             privileged: true
             capabilities:
