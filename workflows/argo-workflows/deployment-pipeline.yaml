@@ -18,7 +18,7 @@ spec:
       dag:
         tasks:
           - name: clone-source
-            template: clone-soure-repo
+            template: clone-source-repo
           - name: clone-deployment
             template: clone-deployment-pipeline
           - name: ci
@@ -26,16 +26,16 @@ spec:
             dependencies:
               - clone-deployment
               - clone-source
-    - name: clone-soure-repo
+    - name: clone-source-repo
       container:
         image: alpine/git
         command: ["sh", "-c"]
+        workingDir: /source-repo
         args:
           - |
             ls /source-repo
             if [ -d "/source-repo/.git" ]; then
               echo "Repository already exists, pulling latest changes..."
-              cd /source-repo
               git pull origin main
             else
               echo "Repository doesn't exist, cloning..."
@@ -56,6 +56,7 @@ spec:
       container:
         image: alpine/git
         command: ["sh", "-c"]
+        workingDir: /deployment-pipeline
         args:
           - |
             pwd
@@ -65,7 +66,6 @@ spec:
             echo "ls /deployment-pipeline ----------------------"
             if [ -d "/deployment-pipeline/.git" ]; then
               echo "Repository already exists, pulling latest changes..."
-              cd /deployment-pipeline
               git pull origin main
             else
               echo "Repository doesn't exist, cloning..."
