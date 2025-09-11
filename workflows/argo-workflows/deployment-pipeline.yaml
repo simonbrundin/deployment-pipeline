@@ -21,12 +21,11 @@ spec:
             template: clone-soure-repo
           - name: clone-deployment
             template: clone-deployment-pipeline
-            dependencies:
-              - clone-source
           - name: ci
             template: dagger-ci
             dependencies:
               - clone-deployment
+              - clone-source
     - name: clone-soure-repo
       container:
         image: alpine/git
