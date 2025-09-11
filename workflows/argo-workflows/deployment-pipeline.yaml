@@ -132,7 +132,7 @@ spec:
       sidecars:
         - name: dagger-engine
           # replace with the latest available version of Dagger for your platform
-          image: registry.dagger.io/engine:v0.18.16
+          image: registry.dagger.io/engine:v0.18.17
           securityContext:
             privileged: true
             capabilities:
