@@ -115,6 +115,8 @@ spec:
           #   value: "dagger-engine.dagger.svc.cluster.local:8080"
           - name: DAGGER_SESSION_HOST
             value: "127.0.0.1:8080"
+          - name: "_EXPERIMENTAL_DAGGER_RUNNER_HOST"
+            value: "unix:///run/dagger/engine.sock"
           - name: DAGGER_CLOUD_TOKEN
             valueFrom:
               secretKeyRef:
