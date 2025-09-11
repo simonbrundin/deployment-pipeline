@@ -101,7 +101,7 @@ spec:
             dagger call ci \
               --image-name {{workflow.parameters.repo-name}} \
               --registry-address {{workflow.parameters.registry-address}} \
-              --source-dir /source-repo/{{workflow.parameters.source-folder}} \
+              --source-dir /source-repo/{{workflow.parameters.repo-name}}/{{workflow.parameters.source-folder}} \
               --tag {{workflow.parameters.tag}} \
               --username {{workflow.parameters.registry-username}} \
               --secret ${{workflow.parameters.registry-password-env}}
