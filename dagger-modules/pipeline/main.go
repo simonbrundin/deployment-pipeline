@@ -72,3 +72,13 @@ func (pipeline *Pipeline) CI(
 	logs += fmt.Sprintf("✅ CI-workflow klar! Total körtid: %ds\n", int(time.Since(startTime).Seconds()))
 	return logs, nil
 }
+
+// CD kör komplett CD-workflow
+func (pipeline *Pipeline) CD() (string, error) {
+	startTime := time.Now()
+	// ctx := context.Background()
+	logs := "🚀 Startar CD-workflow...\n"
+
+	logs += fmt.Sprintf("✅ CI-workflow klar! Total körtid: %ds\n", int(time.Since(startTime).Seconds()))
+	return logs, nil
+}

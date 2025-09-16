@@ -3,5 +3,12 @@
   "engineVersion": "v0.18.17",
   "sdk": {
     "source": "go"
-  }
+  },
+  "dependencies": [
+    {
+      "name": "semantic-release",
+      "source": "github.com/BCIT-LTC/daggerverse/semantic-release@6b55663bfe79bea4037657f0a50cb5a08a1959fe",
+      "pin": "6b55663bfe79bea4037657f0a50cb5a08a1959fe"
+    }
+  ]
 }
