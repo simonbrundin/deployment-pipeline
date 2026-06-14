@@ -34,9 +34,9 @@ jobs:
         id: set-path
         run: |
           if [ "${{ inputs.source-dir }}" = "." ]; then
-            echo "source_path=app" >> $GITHUB_OUTPUT
+            echo "source_path=./app" >> $GITHUB_OUTPUT
           else
-            echo "source_path=app/${{ inputs.source-dir }}" >> $GITHUB_OUTPUT
+            echo "source_path=./app/${{ inputs.source-dir }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Kör Commit Phase
