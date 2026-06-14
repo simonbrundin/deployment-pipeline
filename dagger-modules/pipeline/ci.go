@@ -4,6 +4,7 @@ import (
 	"context"
 	"dagger/pipeline/internal/dagger"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -15,7 +16,6 @@ func (pipeline *Pipeline) CI(
 	sourceDir *dagger.Directory,
 	registryAddress string,
 	imageName string,
-	tag string,
 	username string,
 	secret string,
 	multiArch bool,
@@ -24,6 +24,43 @@ func (pipeline *Pipeline) CI(
 	startTime := time.Now()
 	ctx := context.Background()
 	logs := "🚀 Startar CI-workflow...\n"
+
+	// ============================================
+	// STEG 0: BERÄKNA VERSION FRÅN GIT
+	// ============================================
+	latestTag, err := pipeline.GetLatestTag(ctx, sourceDir)
+	if err != nil {
+		logs += fmt.Sprintf("⚠️ Kunde inte hämta senaste tagg: %v\n", err)
+		latestTag = "0.0.0"
+	}
+	logs += fmt.Sprintf("📌 Senaste tagg: %s\n", latestTag)
+
+	commits, err := pipeline.GetCommitsSinceTag(ctx, sourceDir, latestTag)
+	if err != nil {
+		logs += fmt.Sprintf("⚠️ Kunde inte hämta commits: %v\n", err)
+		commits = ""
+	}
+
+	commitMessage := "fix: update"
+	if commits != "" {
+		lines := strings.Split(strings.TrimSpace(commits), "\n")
+		if len(lines) > 0 {
+			commitMessage = strings.TrimSpace(lines[0])
+			if idx := strings.Index(commitMessage, " "); idx > 0 {
+				commitMessage = commitMessage[idx+1:]
+			}
+		}
+	}
+	logs += fmt.Sprintf("📝 Senaste commit: %s\n", commitMessage)
+
+	newVersion, err := pipeline.SemVerBump(latestTag, commitMessage)
+	if err != nil {
+		logs += fmt.Sprintf("⚠️ Kunde inte beräkna ny version: %v\n", err)
+		newVersion = "v1.0.0"
+	}
+	logs += fmt.Sprintf("🏷️  Ny version: %s\n", newVersion)
+
+	tag := fmt.Sprintf("frontend-%s", newVersion)
 
 	// ============================================
 	// STEG 1: KÖR ENHETSTESTER
