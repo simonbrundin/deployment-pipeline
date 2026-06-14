@@ -23,7 +23,7 @@ jobs:
           verb: call
           module: ./pipeline/dagger-modules/pipeline
           args:
-            ci --source-dir app --registry-address ${{ vars.REGISTRY_ADDRESS }}
+            commit-phase --source-dir app --registry-address ${{ vars.REGISTRY_ADDRESS }}
             --image-name ${{ github.event.repository.name }} --tag ${{
             github.run_number }} --username ${{ vars.REGISTRY_USERNAME }}
             --secret ${{ secrets.REGISTRY_PASSWORD }}

@@ -12,7 +12,7 @@ import (
 // 1. Kör tester
 // 2. Bygg container-image
 // 3. Pusha till registry
-func (pipeline *Pipeline) CI(
+func (pipeline *Pipeline) CommitPhase(
 	sourceDir *dagger.Directory,
 	registryAddress string,
 	imageName string,
