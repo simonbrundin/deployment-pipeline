@@ -37,7 +37,7 @@ jobs:
           module: ./pipeline/dagger-modules/pipeline
           args: |
             commit-phase
-            --source-dir app/${{ inputs.source-dir }}
+            --source-dir ${{ inputs.source-dir == '.' && 'app' || 'app/' + inputs.source-dir }}
             --registry-address ${{ vars.REGISTRY_ADDRESS }}
             --image-name ${{ inputs.image-name || github.event.repository.name }}
             --username ${{ vars.REGISTRY_USERNAME }}
