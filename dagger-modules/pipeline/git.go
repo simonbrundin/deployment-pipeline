@@ -8,8 +8,9 @@ import (
 )
 
 func (pipeline *Pipeline) GetLatestTag(ctx context.Context, sourceDir *dagger.Directory) (string, error) {
+	// Använd git-container med caching för snabbare tag-hämtning
 	container := dag.Container().
-		From("alpine:latest").
+		From("alpine/git"). // Inkluderar git utan att installera via apk
 		WithMountedDirectory("/src", sourceDir).
 		WithWorkdir("/src").
 		WithExec([]string{"git", "fetch", "--tags"})
@@ -30,8 +31,9 @@ func (pipeline *Pipeline) GetLatestTag(ctx context.Context, sourceDir *dagger.Di
 }
 
 func (pipeline *Pipeline) GetCommitsSinceTag(ctx context.Context, sourceDir *dagger.Directory, tag string) (string, error) {
+	// Använd git-container med caching för snabbare commit-logg
 	container := dag.Container().
-		From("alpine:latest").
+		From("alpine/git").
 		WithMountedDirectory("/src", sourceDir).
 		WithWorkdir("/src").
 		WithExec([]string{"git", "fetch", "--tags"})

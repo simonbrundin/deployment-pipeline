@@ -14,6 +14,7 @@ type MultiArchContainers struct {
 }
 
 // BuildMultiArchImage bygger containers för flera arkitekturer utan att pusha
+// Använder caching för att snabba upp multi-arch builds
 func (pipeline *Pipeline) BuildMultiArchImage(ctx context.Context, sourceDir *dagger.Directory) (*MultiArchContainers, error) {
 	start := time.Now()
 	logs := "📦 Bygger multi-arch containers...\n"
@@ -33,7 +34,7 @@ func (pipeline *Pipeline) BuildMultiArchImage(ctx context.Context, sourceDir *da
 	var containers []*dagger.Container
 
 	if dockerfileExists {
-		logs += "📄 Dockerfile hittad, bygger multi-arch från Dockerfile...\n"
+		logs += "📄 Dockerfile hittad, bygger multi-arch med layer caching...\n"
 
 		// Bygg för varje plattform med native emulation
 		for _, platform := range platforms {
@@ -41,16 +42,29 @@ func (pipeline *Pipeline) BuildMultiArchImage(ctx context.Context, sourceDir *da
 
 			container := sourceDir.DockerBuild(dagger.DirectoryDockerBuildOpts{
 				Platform: platform,
+				// Aktivera BuildKit inline cache för snabbare rebuilds
+				BuildArgs: []dagger.BuildArg{
+					{Name: "BUILDKIT_INLINE_CACHE", Value: "1"},
+				},
 			})
 
 			containers = append(containers, container)
 		}
 	} else {
-		logs += "📦 Ingen Dockerfile, bygger Go-binärer med cross-compilation...\n"
+		logs += "📦 Ingen Dockerfile, bygger med cross-compilation + caching...\n"
+
+		// Skapa delad Go-builder cache för båda arkitekturerna
+		goCacheImage := dag.Container().
+			From("golang:1.23-alpine").
+			WithWorkdir("/src").
+			WithDirectory("/src", sourceDir).
+			// Montera Go module cache - återanvänds mellan arkitekturer!
+			WithMountedCache("/go/pkg/mod", dag.CacheVolume("go-mod-cache")).
+			WithMountedCache("/go/build-cache", dag.CacheVolume("go-build-cache"))
 
 		// Cross-compilation för Go-projekt
 		for _, platform := range platforms {
-			logs += fmt.Sprintf("🔨 Cross-kompilerar för %s...\n", platform)
+			logs += fmt.Sprintf("🔨 Cross-kompilerar för %s (med caching)...\n", platform)
 
 			// Extrahera arkitektur från platform string
 			var goarch string
@@ -63,15 +77,12 @@ func (pipeline *Pipeline) BuildMultiArchImage(ctx context.Context, sourceDir *da
 				goarch = "amd64" // fallback
 			}
 
-			// Bygg Go-binär med cross-compilation på host-plattformen
-			builder := dag.Container().
-				From("golang:1.21-alpine").
-				WithDirectory("/src", sourceDir).
-				WithWorkdir("/src").
+			// Bygg Go-binär med cross-compilation (delar cache med goCacheImage)
+			builder := goCacheImage.
 				WithEnvVariable("CGO_ENABLED", "0").
 				WithEnvVariable("GOOS", "linux").
 				WithEnvVariable("GOARCH", goarch).
-				WithExec([]string{"go", "build", "-o", "/output/app"})
+				WithExec([]string{"go", "build", "-ldflags", "-s -w", "-o", "/output/app"})
 
 			// Hämta den byggda binären
 			binary := builder.File("/output/app")

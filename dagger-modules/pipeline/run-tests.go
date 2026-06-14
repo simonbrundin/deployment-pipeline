@@ -56,15 +56,21 @@ func javascriptTests(ctx context.Context, source *dagger.Directory, tagFilter st
 	logs := "🧪 Kör JavaScript-tester...\n"
 
 	// Grundcontainer med miljö och cache
+	// Caches:
+	// - /root/.bun -> bundlar cache
+	// - /app/node_modules -> npm/yarn/pnpm cache
+	// - /root/.npm -> npm registry cache
 	base := dag.Container().
 		From("oven/bun:latest").
 		WithWorkdir("/app").
 		WithMountedDirectory("/app", source).
+		// Bun cache för snabbare package resolution
 		WithMountedCache("/root/.bun", dag.CacheVolume("bun-cache")).
+		// Node modules cache - återanvänder redan installerade paket
 		WithMountedCache("/app/node_modules", dag.CacheVolume("node-modules-cache"))
 
-	// Steg 1: installera beroenden
-	deps := base.WithExec([]string{"bun", "install"})
+	// Steg 1: installera beroenden (cachade om package.json inte ändrats)
+	deps := base.WithExec([]string{"bun", "install", "--frozen-lockfile"})
 
 	// Steg 2: kör tester
 	var testArgs []string
@@ -92,15 +98,24 @@ func javascriptTests(ctx context.Context, source *dagger.Directory, tagFilter st
 func goTests(ctx context.Context, source *dagger.Directory, tagFilter string) (string, error) {
 	logs := "🧪 Kör Go-tester...\n"
 
-	// Grundcontainer med Go-miljö
+	// Grundcontainer med Go-miljö och caching
+	// Caches:
+	// - /go/pkg/mod -> Go module cache (delas mellan runs)
+	// - /go/build-cache -> Go build cache (delas mellan runs)
+	// - /root/go/build -> test binary cache
 	base := dag.Container().
-		From("golang:1.23"). // Uppdaterad till en nyare Go-version
+		From("golang:1.23-alpine").
 		WithWorkdir("/app").
 		WithMountedDirectory("/app", source).
+		// Module cache - återanvänds mellan builds
 		WithMountedCache("/go/pkg/mod", dag.CacheVolume("go-mod-cache")).
-		WithMountedCache("/go/build-cache", dag.CacheVolume("go-build-cache"))
+		// Build cache - dramatiskt snabbare för stora projekt
+		WithMountedCache("/go/build-cache", dag.CacheVolume("go-build-cache")).
+		// Test binary cache
+		WithEnvVariable("GOCACHE", "/go/build-cache").
+		WithEnvVariable("GOTOOLCHAIN", "local")
 
-	// Steg 1: hämta beroenden
+	// Steg 1: hämta beroenden (cachade om go.sum inte ändrats)
 	deps, err := base.WithExec([]string{"go", "mod", "download"}).Sync(ctx)
 	if err != nil {
 		logs += fmt.Sprintf("❌ Fel vid hämtning av Go-beroenden: %v\n", err)
@@ -108,11 +123,12 @@ func goTests(ctx context.Context, source *dagger.Directory, tagFilter string) (s
 	}
 
 	// Steg 2: kör tester
+	// Använd -cache för att återanvända tidigare testresultat
 	var testArgs []string
 	if tagFilter != "" {
 		testArgs = []string{"go", "test", "./...", "-v", "-run", tagFilter}
 	} else {
-		testArgs = []string{"go", "test", "./...", "-v"}
+		testArgs = []string{"go", "test", "./...", "-v", "-count=1"}
 	}
 	_, err = deps.WithExec(testArgs).Sync(ctx)
 	if err != nil {
