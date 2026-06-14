@@ -22,7 +22,6 @@ jobs:
           path: app
           sparse-checkout: |
             ${{ inputs.source-dir }}
-            ${{ inputs.source-dir }}/**
 
       - name: Hämta Pipeline
         uses: actions/checkout@v4
