@@ -88,4 +88,3 @@ func incrementVersion(version string, bumpType string) (string, error) {
 
 	return fmt.Sprintf("v%d.%d.%d", major, minor, patch), nil
 }
-
