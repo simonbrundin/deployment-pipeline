@@ -4,6 +4,7 @@ import (
 	"context"
 	"dagger/pipeline/internal/dagger"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 )
@@ -17,9 +18,10 @@ func (pipeline *Pipeline) CommitPhase(
 	registryAddress string,
 	imageName string,
 	username string,
-	secret string,
 	multiArch bool,
 ) (string, error) {
+	// Läs secret från miljövariabel (säkrare än CLI-argument)
+	secret := os.Getenv("REGISTRY_PASSWORD")
 	// ---- FÖRBEREDelser ----
 	startTime := time.Now()
 	ctx := context.Background()
