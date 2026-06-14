@@ -8,24 +8,29 @@ import (
 )
 
 // UnitTests kör unit tester
-func (pipeline *Pipeline) UnitTests(ctx context.Context, sourceDir *dagger.Directory) (string, error) {
+// tagFilter: cucumber-tag att filtrera på (t.ex. "@commit", "@ci"). Tom sträng = kör alla.
+func (pipeline *Pipeline) UnitTests(ctx context.Context, sourceDir *dagger.Directory, tagFilter string) (string, error) {
 	start := time.Now()
 	logs := "🧪 Kör unit tester...\n"
+
+	if tagFilter != "" {
+		logs += fmt.Sprintf("🏷️  Filtrerar på tagg: %s\n", tagFilter)
+	}
 
 	projectLanguage := detectProjectLanguage(ctx, sourceDir)
 	switch projectLanguage {
 	case "javascript":
-		testLogs := javascriptTests(ctx, sourceDir)
+		testLogs := javascriptTests(ctx, sourceDir, tagFilter)
 		logs += testLogs
 	case "go":
-		testLogs, err := goTests(ctx, sourceDir)
+		testLogs, err := goTests(ctx, sourceDir, tagFilter)
 		if err != nil {
 			logs += fmt.Sprintf("❌ Fel vid körning av Go-tester: %v\n", err)
 		} else {
 			logs += testLogs
 		}
 	case "java":
-		testLogs, err := javaTests(ctx, sourceDir)
+		testLogs, err := javaTests(ctx, sourceDir, tagFilter)
 		if err != nil {
 			logs += fmt.Sprintf("❌ Fel vid körning av Java-tester: %v\n", err)
 		} else {
@@ -41,7 +46,7 @@ func (pipeline *Pipeline) UnitTests(ctx context.Context, sourceDir *dagger.Direc
 	return logs, nil
 }
 
-func javascriptTests(ctx context.Context, source *dagger.Directory) string {
+func javascriptTests(ctx context.Context, source *dagger.Directory, tagFilter string) string {
 	logs := "🧪 Kör JavaScript-tester...\n"
 
 	// Grundcontainer med miljö och cache
@@ -56,7 +61,13 @@ func javascriptTests(ctx context.Context, source *dagger.Directory) string {
 	deps := base.WithExec([]string{"bun", "install"})
 
 	// Steg 2: kör tester
-	result := deps.WithExec([]string{"bun", "run", "test"})
+	var testArgs []string
+	if tagFilter != "" {
+		testArgs = []string{"bun", "run", "test", "--tags", tagFilter}
+	} else {
+		testArgs = []string{"bun", "run", "test"}
+	}
+	result := deps.WithExec(testArgs)
 	stdout, err := result.Stdout(ctx)
 	if err != nil {
 		logs += fmt.Sprintf("❌ Fel vid körning av JavaScript-tester: %v\n", err)
@@ -67,7 +78,7 @@ func javascriptTests(ctx context.Context, source *dagger.Directory) string {
 	return logs
 }
 
-func goTests(ctx context.Context, source *dagger.Directory) (string, error) {
+func goTests(ctx context.Context, source *dagger.Directory, tagFilter string) (string, error) {
 	logs := "🧪 Kör Go-tester...\n"
 
 	// Grundcontainer med Go-miljö
@@ -86,7 +97,13 @@ func goTests(ctx context.Context, source *dagger.Directory) (string, error) {
 	}
 
 	// Steg 2: kör tester
-	_, err = deps.WithExec([]string{"go", "test", "./...", "-v"}).Sync(ctx)
+	var testArgs []string
+	if tagFilter != "" {
+		testArgs = []string{"go", "test", "./...", "-v", "-run", tagFilter}
+	} else {
+		testArgs = []string{"go", "test", "./...", "-v"}
+	}
+	_, err = deps.WithExec(testArgs).Sync(ctx)
 	if err != nil {
 		logs += fmt.Sprintf("❌ Fel vid körning av Go-tester: %v\n", err)
 		return logs, err
@@ -95,7 +112,7 @@ func goTests(ctx context.Context, source *dagger.Directory) (string, error) {
 	return logs, nil
 }
 
-func javaTests(ctx context.Context, source *dagger.Directory) (string, error) {
+func javaTests(ctx context.Context, source *dagger.Directory, tagFilter string) (string, error) {
 	logs := "🧪 Kör Java-tester...\n"
 
 	// Grundcontainer med Java-miljö
@@ -106,7 +123,13 @@ func javaTests(ctx context.Context, source *dagger.Directory) (string, error) {
 		WithMountedCache("/root/.m2", dag.CacheVolume("maven-cache"))
 
 	// Steg 1: kör tester med Maven
-	_, err := base.WithExec([]string{"mvn", "test"}).Sync(ctx)
+	var testArgs []string
+	if tagFilter != "" {
+		testArgs = []string{"mvn", "test", "-Dcucumber.filter.tags=" + tagFilter}
+	} else {
+		testArgs = []string{"mvn", "test"}
+	}
+	_, err := base.WithExec(testArgs).Sync(ctx)
 	if err != nil {
 		logs += fmt.Sprintf("❌ Fel vid körning av Java-tester: %v\n", err)
 		return logs, err

@@ -63,9 +63,9 @@ func (pipeline *Pipeline) CI(
 	tag := fmt.Sprintf("frontend-%s", newVersion)
 
 	// ============================================
-	// STEG 1: KÖR ENHETSTESTER
+	// STEG 1: KÖR ENHETSTESTER (endast @commit-taggen)
 	// ============================================
-	testLogs, err := pipeline.UnitTests(ctx, sourceDir)
+	testLogs, err := pipeline.UnitTests(ctx, sourceDir, "@commit")
 	if err != nil {
 		return logs + fmt.Sprintf("❌ Test misslyckades: %v\n", err), err
 	}

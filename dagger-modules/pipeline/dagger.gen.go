@@ -278,13 +278,6 @@ func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName st
 					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg imageName", err))
 				}
 			}
-			var tag string
-			if inputArgs["tag"] != nil {
-				err = json.Unmarshal([]byte(inputArgs["tag"]), &tag)
-				if err != nil {
-					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg tag", err))
-				}
-			}
 			var username string
 			if inputArgs["username"] != nil {
 				err = json.Unmarshal([]byte(inputArgs["username"]), &username)
@@ -306,7 +299,7 @@ func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName st
 					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg multiArch", err))
 				}
 			}
-			return (*Pipeline).CI(&parent, sourceDir, registryAddress, imageName, tag, username, secret, multiArch)
+			return (*Pipeline).CI(&parent, sourceDir, registryAddress, imageName, username, secret, multiArch)
 		case "PushImages":
 			var parent Pipeline
 			err = json.Unmarshal(parentJSON, &parent)
@@ -390,7 +383,14 @@ func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName st
 					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg sourceDir", err))
 				}
 			}
-			return (*Pipeline).UnitTests(&parent, ctx, sourceDir)
+			var tagFilter string
+			if inputArgs["tagFilter"] != nil {
+				err = json.Unmarshal([]byte(inputArgs["tagFilter"]), &tagFilter)
+				if err != nil {
+					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg tagFilter", err))
+				}
+			}
+			return (*Pipeline).UnitTests(&parent, ctx, sourceDir, tagFilter)
 		default:
 			return nil, fmt.Errorf("unknown function %s", fnName)
 		}
