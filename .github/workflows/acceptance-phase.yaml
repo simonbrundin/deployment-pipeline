@@ -1,20 +1,27 @@
 name: Acceptance Phase
 
-on: workflow_dispatch
+on:
+  workflow_call:
+    inputs:
+      source-dir:
+        required: false
+        default: "."
+        type: string
 
 jobs:
   acceptance-phase:
     runs-on: ubuntu-latest
     steps:
-      - name: Hämta repository
+      - name: Hämta app
         uses: actions/checkout@v4
         with:
           path: app
 
-      - name: Hämta Deployment Pipeline
+      - name: Hämta Pipeline
         uses: actions/checkout@v4
         with:
           repository: simonbrundin/deployment-pipeline
+          ref: refs/tags/v1
           path: pipeline
 
       - name: Kör Acceptance Phase
@@ -22,6 +29,6 @@ jobs:
         with:
           verb: call
           module: ./pipeline/dagger-modules/pipeline
-          args: acceptance-phase --source-dir app
+          args: acceptance-phase --source-dir app/${{ inputs.source-dir }}
         env:
           DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}

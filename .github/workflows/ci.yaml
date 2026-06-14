@@ -1,0 +1,12 @@
+name: CI
+
+# Manuell trigger för att testa pipelinen
+on: workflow_dispatch
+
+jobs:
+  commit:
+    uses: simonbrundin/deployment-pipeline/.github/workflows/commit-phase.yaml@v1
+
+  acceptance:
+    needs: commit
+    uses: simonbrundin/deployment-pipeline/.github/workflows/acceptance-phase.yaml@v1

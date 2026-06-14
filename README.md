@@ -1,41 +1,51 @@
 # Deployment Pipeline
 
-Mall för CI/CD-pipelines i Dagger som kan triggas via Argo Workflows eller
-GitHub Actions.
+Reusable CI/CD pipelines för Dagger, anropbara från andra GitHub-repos.
 
-## Pipeline-steg
+## Användning i andra repos
 
-| Steg | Beskrivning                                       |
-| ---- | ------------------------------------------------- |
-| Bygg | Bygger Docker-image från Dockerfile eller källkod |
-| Test | Kör enhetstester (Go, JavaScript, Java)           |
-| Push | Pushar image till registry (stödjer multi-arch)   |
+```yaml
+# .github/workflows/ci.yaml
+name: CI
 
-## Stödda språk
+on: push
 
-- Go
-- JavaScript (via Bun)
-- Java (via Maven)
+jobs:
+  commit:
+    uses: simonbrundin/deployment-pipeline/.github/workflows/commit-phase.yaml@v1
+    with:
+      source-dir: . # Valfri, default: .
+      image-name: "" # Valfri, default: repo-namn
 
-## Användning
+  acceptance:
+    needs: commit
+    uses: simonbrundin/deployment-pipeline/.github/workflows/acceptance-phase.yaml@v1
+    with:
+      source-dir: . # Valfri, default: .
+```
 
-### GitHub Actions
+## Krävs i anropande repo
 
-Kopiera `workflows/github-actions/minimal.yaml` till din repo.
+**Secrets:**
 
-### Argo Workflows
+- `DAGGER_CLOUD_TOKEN`
 
-Använd `ClusterWorkflowTemplate` från
-`workflows/argo-workflows/deployment-pipeline.yaml`.
+**Variables:**
 
-### Argos Events
-
-Trigger från `events/argo-events/commit.yaml`.
+- `REGISTRY_ADDRESS`
+- `REGISTRY_USERNAME`
+- `REGISTRY_PASSWORD`
 
 ## Struktur
 
 ```
-├── dagger-modules/pipeline/   # Dagger Go-moduler
-├── workflows/                 # Pipeline-definitioner
-└── events/                    # Event-triggers
+.github/workflows/
+├── ci.yaml              # Kombinerad pipeline (för test)
+├── commit-phase.yaml    # Reusable: bygg + push
+└── acceptance-phase.yaml # Reusable: test + deploy
 ```
+
+## Versionering
+
+Använd taggar (`@v1`, `@v2`) för att låsa version. Se till att taggen finns i
+detta repo innan du uppdaterar referenser i produktionsrepos.

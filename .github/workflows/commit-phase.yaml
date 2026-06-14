@@ -1,20 +1,34 @@
 name: Commit Phase
 
-on: push
+on:
+  workflow_call:
+    inputs:
+      source-dir:
+        required: false
+        default: "."
+        type: string
+      image-name:
+        required: false
+        default: ""
+        type: string
 
 jobs:
   commit-phase:
     runs-on: ubuntu-latest
     steps:
-      - name: Hämta repository
+      - name: Hämta app
         uses: actions/checkout@v4
         with:
           path: app
+          sparse-checkout: |
+            ${{ inputs.source-dir }}
+            ${{ inputs.source-dir }}/**
 
-      - name: Hämta Deployment Pipeline
+      - name: Hämta Pipeline
         uses: actions/checkout@v4
         with:
           repository: simonbrundin/deployment-pipeline
+          ref: refs/tags/v1 # Använd tagg för stabil version
           path: pipeline
 
       - name: Kör Commit Phase
@@ -22,10 +36,11 @@ jobs:
         with:
           verb: call
           module: ./pipeline/dagger-modules/pipeline
-          args: >
-            commit-phase --source-dir app
+          args: |
+            commit-phase
+            --source-dir app/${{ inputs.source-dir }}
             --registry-address ${{ vars.REGISTRY_ADDRESS }}
-            --image-name ${{ github.event.repository.name }}
+            --image-name ${{ inputs.image-name || github.event.repository.name }}
             --username ${{ vars.REGISTRY_USERNAME }}
             --secret ${{ secrets.REGISTRY_PASSWORD }}
             --multi-arch true
