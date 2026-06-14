@@ -36,9 +36,9 @@ jobs:
           verb: call
           module: ./pipeline/dagger-modules/pipeline
           workdir: ./pipeline
-          args: |
+          args: >
             commit-phase
-            --source-dir ../app/${{ inputs.source-dir }}
+            --source-dir ../app
             --registry-address ${{ vars.REGISTRY_ADDRESS }}
             --image-name ${{ inputs.image-name || github.event.repository.name }}
             --username ${{ vars.REGISTRY_USERNAME }}
