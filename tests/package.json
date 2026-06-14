@@ -1,0 +1,15 @@
+{
+  "name": "ci-workflow-tests",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "cucumber-js",
+    "test:verbose": "cucumber-js --format progress-bar",
+    "test:report": "cucumber-js --format html:reports/cucumber-report.html",
+    "test:tags": "cucumber-js --tags '@ci'"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^11.0.0",
+    "c8": "^11.0.0"
+  }
+}

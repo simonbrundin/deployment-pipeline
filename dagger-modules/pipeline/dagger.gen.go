@@ -4,22 +4,21 @@ package main
 
 import (
 	"context"
+	"dagger/pipeline/internal/dagger"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"sort"
 
+	telemetry "github.com/dagger/otel-go"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.opentelemetry.io/otel/trace"
 
-	"dagger/pipeline/internal/dagger"
-	"dagger/pipeline/internal/querybuilder"
-	"dagger/pipeline/internal/telemetry"
+	"github.com/dagger/querybuilder"
 )
 
 var dag = dagger.Connect()
@@ -37,7 +36,10 @@ func setMarshalContext(ctx context.Context) {
 	dagger.SetMarshalContext(ctx)
 }
 
-type DaggerObject = querybuilder.GraphQLMarshaller
+type DaggerObject interface {
+	querybuilder.GraphQLMarshaller
+	ID(ctx context.Context) (dagger.ID, error)
+}
 
 type ExecError = dagger.ExecError
 
@@ -57,16 +59,22 @@ func convertSlice[I any, O any](in []I, f func(I) O) []O {
 }
 
 func (r Pipeline) MarshalJSON() ([]byte, error) {
-	var concrete struct{}
+	var concrete struct {
+		Pipeline any
+	}
+	concrete.Pipeline = r.Pipeline
 	return json.Marshal(&concrete)
 }
 
 func (r *Pipeline) UnmarshalJSON(bs []byte) error {
-	var concrete struct{}
+	var concrete struct {
+		Pipeline any
+	}
 	err := json.Unmarshal(bs, &concrete)
 	if err != nil {
 		return err
 	}
+	r.Pipeline = concrete.Pipeline
 	return nil
 }
 
@@ -109,8 +117,7 @@ func main() {
 }
 
 func convertError(rerr error) *dagger.Error {
-	var gqlErr *gqlerror.Error
-	if errors.As(rerr, &gqlErr) {
+	if gqlErr := findSingleGQLError(rerr); gqlErr != nil {
 		dagErr := dag.Error(gqlErr.Message)
 		if gqlErr.Extensions != nil {
 			keys := make([]string, 0, len(gqlErr.Extensions))
@@ -129,6 +136,19 @@ func convertError(rerr error) *dagger.Error {
 		return dagErr
 	}
 	return dag.Error(rerr.Error())
+}
+
+func findSingleGQLError(rerr error) *gqlerror.Error {
+	switch x := rerr.(type) {
+	case *gqlerror.Error:
+		return x
+	case interface{ Unwrap() []error }:
+		return nil
+	case interface{ Unwrap() error }:
+		return findSingleGQLError(x.Unwrap())
+	default:
+		return nil
+	}
 }
 
 func dispatch(ctx context.Context) (rerr error) {
@@ -185,10 +205,6 @@ func dispatch(ctx context.Context) (rerr error) {
 
 	result, err := invoke(ctx, []byte(parentJson), parentName, fnName, inputArgs)
 	if err != nil {
-		var exec *dagger.ExecError
-		if errors.As(err, &exec) {
-			return exec.Unwrap()
-		}
 		return err
 	}
 	resultBytes, err := json.Marshal(result)
@@ -201,74 +217,12 @@ func dispatch(ctx context.Context) (rerr error) {
 	}
 	return nil
 }
+
 func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName string, inputArgs map[string][]byte) (_ any, err error) {
 	_ = inputArgs
 	switch parentName {
 	case "Pipeline":
 		switch fnName {
-		case "UnitTests":
-			var parent Pipeline
-			err = json.Unmarshal(parentJSON, &parent)
-			if err != nil {
-				panic(fmt.Errorf("%s: %w", "failed to unmarshal parent object", err))
-			}
-			var sourceDir *dagger.Directory
-			if inputArgs["sourceDir"] != nil {
-				err = json.Unmarshal([]byte(inputArgs["sourceDir"]), &sourceDir)
-				if err != nil {
-					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg sourceDir", err))
-				}
-			}
-			return (*Pipeline).UnitTests(&parent, ctx, sourceDir)
-		case "PushImage":
-			var parent Pipeline
-			err = json.Unmarshal(parentJSON, &parent)
-			if err != nil {
-				panic(fmt.Errorf("%s: %w", "failed to unmarshal parent object", err))
-			}
-			var container *dagger.Container
-			if inputArgs["container"] != nil {
-				err = json.Unmarshal([]byte(inputArgs["container"]), &container)
-				if err != nil {
-					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg container", err))
-				}
-			}
-			var registryAddress string
-			if inputArgs["registryAddress"] != nil {
-				err = json.Unmarshal([]byte(inputArgs["registryAddress"]), &registryAddress)
-				if err != nil {
-					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg registryAddress", err))
-				}
-			}
-			var imageName string
-			if inputArgs["imageName"] != nil {
-				err = json.Unmarshal([]byte(inputArgs["imageName"]), &imageName)
-				if err != nil {
-					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg imageName", err))
-				}
-			}
-			var tag string
-			if inputArgs["tag"] != nil {
-				err = json.Unmarshal([]byte(inputArgs["tag"]), &tag)
-				if err != nil {
-					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg tag", err))
-				}
-			}
-			var username string
-			if inputArgs["username"] != nil {
-				err = json.Unmarshal([]byte(inputArgs["username"]), &username)
-				if err != nil {
-					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg username", err))
-				}
-			}
-			var secret string
-			if inputArgs["secret"] != nil {
-				err = json.Unmarshal([]byte(inputArgs["secret"]), &secret)
-				if err != nil {
-					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg secret", err))
-				}
-			}
-			return (*Pipeline).PushImage(&parent, ctx, container, registryAddress, imageName, tag, username, secret)
 		case "BuildImage":
 			var parent Pipeline
 			err = json.Unmarshal(parentJSON, &parent)
@@ -297,6 +251,13 @@ func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName st
 				}
 			}
 			return (*Pipeline).BuildMultiArchImage(&parent, ctx, sourceDir)
+		case "CD":
+			var parent Pipeline
+			err = json.Unmarshal(parentJSON, &parent)
+			if err != nil {
+				panic(fmt.Errorf("%s: %w", "failed to unmarshal parent object", err))
+			}
+			return (*Pipeline).CD(&parent)
 		case "CI":
 			var parent Pipeline
 			err = json.Unmarshal(parentJSON, &parent)
@@ -353,17 +314,17 @@ func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName st
 				}
 			}
 			return (*Pipeline).CI(&parent, sourceDir, registryAddress, imageName, tag, username, secret, multiArch)
-		case "PushMultiArchImage":
+		case "PushImages":
 			var parent Pipeline
 			err = json.Unmarshal(parentJSON, &parent)
 			if err != nil {
 				panic(fmt.Errorf("%s: %w", "failed to unmarshal parent object", err))
 			}
-			var multiArch *MultiArchContainers
-			if inputArgs["multiArch"] != nil {
-				err = json.Unmarshal([]byte(inputArgs["multiArch"]), &multiArch)
+			var containers []*dagger.Container
+			if inputArgs["containers"] != nil {
+				err = json.Unmarshal([]byte(inputArgs["containers"]), &containers)
 				if err != nil {
-					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg multiArch", err))
+					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg containers", err))
 				}
 			}
 			var registryAddress string
@@ -401,70 +362,24 @@ func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName st
 					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg secret", err))
 				}
 			}
-			return (*Pipeline).PushMultiArchImage(&parent, ctx, multiArch, registryAddress, imageName, tag, username, secret)
+			return (*Pipeline).PushImages(&parent, ctx, containers, registryAddress, imageName, tag, username, secret)
+		case "UnitTests":
+			var parent Pipeline
+			err = json.Unmarshal(parentJSON, &parent)
+			if err != nil {
+				panic(fmt.Errorf("%s: %w", "failed to unmarshal parent object", err))
+			}
+			var sourceDir *dagger.Directory
+			if inputArgs["sourceDir"] != nil {
+				err = json.Unmarshal([]byte(inputArgs["sourceDir"]), &sourceDir)
+				if err != nil {
+					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg sourceDir", err))
+				}
+			}
+			return (*Pipeline).UnitTests(&parent, ctx, sourceDir)
 		default:
 			return nil, fmt.Errorf("unknown function %s", fnName)
 		}
-	case "":
-		return dag.Module().
-			WithObject(
-				dag.TypeDef().WithObject("Pipeline", dagger.TypeDefWithObjectOpts{SourceMap: dag.SourceMap("main.go", 10, 6)}).
-					WithFunction(
-						dag.Function("UnitTests",
-							dag.TypeDef().WithKind(dagger.TypeDefKindStringKind)).
-							WithDescription("UnitTests kör unit tester").
-							WithSourceMap(dag.SourceMap("unit-tests.go", 11, 1)).
-							WithArg("sourceDir", dag.TypeDef().WithObject("Directory"), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("unit-tests.go", 11, 58)})).
-					WithFunction(
-						dag.Function("PushImage",
-							dag.TypeDef().WithKind(dagger.TypeDefKindStringKind)).
-							WithDescription("PushImage pushar image till registry").
-							WithSourceMap(dag.SourceMap("push-image.go", 11, 1)).
-							WithArg("container", dag.TypeDef().WithObject("Container"), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("push-image.go", 11, 58)}).
-							WithArg("registryAddress", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("push-image.go", 11, 87)}).
-							WithArg("imageName", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("push-image.go", 11, 111)}).
-							WithArg("tag", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("push-image.go", 11, 129)}).
-							WithArg("username", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("push-image.go", 11, 141)}).
-							WithArg("secret", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("push-image.go", 11, 158)})).
-					WithFunction(
-						dag.Function("BuildImage",
-							dag.TypeDef().WithObject("Container")).
-							WithDescription("BuildImage bygger en Image från Dockerfile eller direkt från källkoden").
-							WithSourceMap(dag.SourceMap("build-image.go", 11, 1)).
-							WithArg("sourceDir", dag.TypeDef().WithObject("Directory"), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("build-image.go", 11, 59)})).
-					WithFunction(
-						dag.Function("BuildMultiArchImage",
-							dag.TypeDef().WithObject("MultiArchContainers")).
-							WithDescription("BuildMultiArchImage bygger containers för flera arkitekturer utan att pusha").
-							WithSourceMap(dag.SourceMap("build-multi-arch-image.go", 17, 1)).
-							WithArg("sourceDir", dag.TypeDef().WithObject("Directory"), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("build-multi-arch-image.go", 17, 68)})).
-					WithFunction(
-						dag.Function("CI",
-							dag.TypeDef().WithKind(dagger.TypeDefKindStringKind)).
-							WithDescription("CI kör komplett CI-workflow").
-							WithSourceMap(dag.SourceMap("main.go", 13, 1)).
-							WithArg("sourceDir", dag.TypeDef().WithObject("Directory"), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("main.go", 14, 2)}).
-							WithArg("registryAddress", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("main.go", 15, 2)}).
-							WithArg("imageName", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("main.go", 16, 2)}).
-							WithArg("tag", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("main.go", 17, 2)}).
-							WithArg("username", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("main.go", 18, 2)}).
-							WithArg("secret", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("main.go", 19, 2)}).
-							WithArg("multiArch", dag.TypeDef().WithKind(dagger.TypeDefKindBooleanKind), dagger.FunctionWithArgOpts{Description: "🔑 optional med default true", SourceMap: dag.SourceMap("main.go", 20, 2)})).
-					WithFunction(
-						dag.Function("PushMultiArchImage",
-							dag.TypeDef().WithKind(dagger.TypeDefKindStringKind)).
-							WithDescription("PushMultiArchImage pushar multi-arch containers till registry").
-							WithSourceMap(dag.SourceMap("push-multi-arch-image.go", 11, 1)).
-							WithArg("multiArch", dag.TypeDef().WithObject("MultiArchContainers"), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("push-multi-arch-image.go", 11, 67)}).
-							WithArg("registryAddress", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("push-multi-arch-image.go", 11, 99)}).
-							WithArg("imageName", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("push-multi-arch-image.go", 11, 123)}).
-							WithArg("tag", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("push-multi-arch-image.go", 11, 141)}).
-							WithArg("username", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("push-multi-arch-image.go", 11, 153)}).
-							WithArg("secret", dag.TypeDef().WithKind(dagger.TypeDefKindStringKind), dagger.FunctionWithArgOpts{SourceMap: dag.SourceMap("push-multi-arch-image.go", 11, 170)}))).
-			WithObject(
-				dag.TypeDef().WithObject("MultiArchContainers", dagger.TypeDefWithObjectOpts{Description: "MultiArchContainers håller containers för olika plattformar", SourceMap: dag.SourceMap("build-multi-arch-image.go", 11, 6)}).
-					WithField("Containers", dag.TypeDef().WithListOf(dag.TypeDef().WithObject("Container")), dagger.TypeDefWithFieldOpts{SourceMap: dag.SourceMap("build-multi-arch-image.go", 12, 2)}).
-					WithField("Platforms", dag.TypeDef().WithListOf(dag.TypeDef().WithScalar("Platform")), dagger.TypeDefWithFieldOpts{SourceMap: dag.SourceMap("build-multi-arch-image.go", 13, 2)})), nil
 	default:
 		return nil, fmt.Errorf("unknown object %s", parentName)
 	}

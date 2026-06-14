@@ -22,7 +22,7 @@ jobs:
       - name: Dagger
         run: |
           cd /usr/local && { curl -L https://dl.dagger.io/dagger/install.sh | sh; cd -; }
-          dagger run go run dagger/main.go
+          dagger run go run . --image-name ${{ github.event.repository.name }} --registry-address ${{ vars.REGISTRY_ADDRESS }} --source-dir . --tag ${{ env.TAG }} --username ${{ vars.REGISTRY_USERNAME }} --secret ${{ secrets.REGISTRY_PASSWORD }}
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}

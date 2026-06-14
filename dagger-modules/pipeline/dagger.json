@@ -1,6 +1,6 @@
 {
   "name": "pipeline",
-  "engineVersion": "v0.18.17",
+  "engineVersion": "v0.21.6",
   "sdk": {
     "source": "go"
   },
@@ -10,5 +10,6 @@
       "source": "github.com/BCIT-LTC/daggerverse/semantic-release@6b55663bfe79bea4037657f0a50cb5a08a1959fe",
       "pin": "6b55663bfe79bea4037657f0a50cb5a08a1959fe"
     }
-  ]
+  ],
+  "disableDefaultFunctionCaching": true
 }

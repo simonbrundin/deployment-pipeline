@@ -1,30 +1,40 @@
 # Deployment Pipeline
 
-Här finns en Deployment Pipeline jag kan använda som mall för alla applications
-jag utvecklar.
+Mall för CI/CD-pipelines med Dagger, Argo Workflows och GitHub Actions.
 
-## Faser
+## Pipeline-steg
 
-### Commit Phase
+| Steg | Beskrivning                                       |
+| ---- | ------------------------------------------------- |
+| Bygg | Bygger Docker-image från Dockerfile eller källkod |
+| Test | Kör enhetstester (Go, JavaScript, Java)           |
+| Push | Pushar image till registry (stödjer multi-arch)   |
 
-Paketerar produkten och ger utvecklaren tummen upp att påbörja nästa förändring.
+## Stödda språk
 
-**Nödvändiga komponenter:**
+- Go
+- JavaScript (via Bun)
+- Java (via Maven)
 
-- Applikationsrepository
-- Commit-workflow
-- Artifaktrepository
-- Program som lyssnar efter commits i repositoryt och kör commit-workflow
+## Användning
 
-**Commit-workflow:**
+### GitHub Actions
 
-1. Sätt upp testmiljö
-2. Bygg applikationen
-3. Kör enhetstester
-4. Skapa artefakt
+Kopiera `workflows/github-actions/dagger.yaml` till din repo.
 
-### Acceptance Phase
+### Argo Workflows
 
-### Production Phase
+Använd `ClusterWorkflowTemplate` från
+`workflows/argo-workflows/deployment-pipeline.yaml`.
 
-### Production Phase
+### Argos Events
+
+Trigger från `events/argo-events/commit.yaml`.
+
+## Struktur
+
+```
+├── dagger-modules/pipeline/   # Dagger Go-moduler
+├── workflows/                 # Pipeline-definitioner
+└── events/                    # Event-triggers
+```

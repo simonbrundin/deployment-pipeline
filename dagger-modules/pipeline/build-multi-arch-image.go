@@ -39,8 +39,9 @@ func (pipeline *Pipeline) BuildMultiArchImage(ctx context.Context, sourceDir *da
 		for _, platform := range platforms {
 			logs += fmt.Sprintf("🔨 Bygger för %s...\n", platform)
 
-			container := dag.Container(dagger.ContainerOpts{Platform: platform}).
-				Build(sourceDir)
+			container := sourceDir.DockerBuild(dagger.DirectoryDockerBuildOpts{
+				Platform: platform,
+			})
 
 			containers = append(containers, container)
 		}
