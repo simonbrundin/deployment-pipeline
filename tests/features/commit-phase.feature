@@ -1,7 +1,7 @@
-Feature: CI-workflow
+Feature: Commit Phase
 
   Som utvecklare
-  Vill jag att CI-flödet kör tester automatiskt
+  Vill jag att Commit Phase-flödet kör tester automatiskt
   För att få snabb återkoppling om koden fungerar
 
   @commit

@@ -1,178 +1,21 @@
-import { execSync } from "node:child_process";
-import { Given, When, Then } from "@cucumber/cucumber";
 import assert from "node:assert";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(__dirname, "../../..");
-const PIPELINE_DIR = path.join(REPO_ROOT, "dagger-modules/pipeline");
-const FIXTURE_DIR = path.join(REPO_ROOT, "tests/fixtures/go-sample");
-const DAGGER_BIN = "/home/linuxbrew/.linuxbrew/Cellar/dagger/0.21.6/bin/dagger";
+import { Given, When, Then } from "@cucumber/cucumber";
+import {
+	PIPELINE_DIR,
+	DAGGER_BIN,
+	runCommand,
+	extractSemVer,
+} from "./shared.steps.js";
 
 // ============================================
-// CI-workflow steg-definitioner
+// Commit Phase steg-definitioner
 // ============================================
-
-/**
- * Kör ett kommando och returnerar resultatet
- */
-function runCommand(cmd, options = {}) {
-	const cwd = options.cwd || process.cwd();
-
-	// Wrappa med bash för att undvika sh-problem
-	const fullCmd = `/bin/bash -c "cd ${cwd} && ${cmd}"`;
-
-	try {
-		const result = execSync(fullCmd, {
-			encoding: "utf-8",
-			stdio: ["pipe", "pipe", "pipe"],
-			maxBuffer: 10 * 1024 * 1024, // 10MB buffer
-			timeout: options.timeout || 300000,
-			env: { ...process.env },
-		});
-		return { success: true, output: result, error: "" };
-	} catch (error) {
-		return {
-			success: false,
-			output: error.stdout || "",
-			error: error.stderr || error.message || "",
-			status: error.status || -1,
-		};
-	}
-}
-
-/**
- * Extraherar semver-version (t.ex. v1.2.3) från text
- * @param {string} text - Text att söka i
- * @returns {string|null} - Versionen eller null om ingen hittades
- */
-function extractSemVer(text) {
-	const match = text.match(/\bv(\d+\.\d+\.\d+)\b/);
-	return match ? `v${match[1]}` : null;
-}
-
-/**
- * Sätter upp registry-uppgifter
- * @param {Object} credentials - { username, secret, valid }
- */
-function setupRegistryCredentials(credentials) {
-	this.registryAddress = process.env.REGISTRY_ADDRESS || "ghcr.io/simon";
-	this.registryUsername = credentials.username;
-	this.registrySecret = credentials.secret;
-	this.skipPublish = !credentials.username || !credentials.secret;
-
-	if (credentials.valid === false) {
-		this.authFailure = true;
-	}
-}
-
-/**
- * Sätter build-resultat på this
- * @param {{success: boolean, output: string, error: string}} result
- */
-function setBuildResult(result) {
-	this.buildOutput = result.output;
-	this.buildSuccess = result.success;
-	this.buildError = result.error;
-}
-
-/**
- * Bygger en Docker-image via Dagger
- * @param {Object} options - Valfria inställningar
- * @param {string} [options.sourceDir] - Sökväg till källkoden
- * @returns {Promise<{success, output, error}>}
- */
-async function buildImage(options = {}) {
-	const sourceDir = options.sourceDir || this.testDir;
-
-	const cmd = [
-		DAGGER_BIN,
-		"call",
-		"build-image",
-		`--source-dir`,
-		sourceDir,
-	].join(" ");
-	const result = runCommand(cmd, { cwd: PIPELINE_DIR });
-	// Extrahera container reference från output
-	if (result.success && result.output) {
-		result.output = result.output.trim();
-	}
-	return result;
-}
-
-/**
- * Pushar en Docker-image till registry
- * @param {string} containerRef - Container reference från build
- * @param {Object} options - Valfria inställningar
- * @param {string} [options.imageName="test-image"] - Image-namn
- * @param {string} [options.tag="test"] - Image-tagg
- * @returns {Promise<{success, output, error}>}
- */
-async function pushImage(containerRef, options = {}) {
-	const imageName = options.imageName || "test-image";
-	const tag = options.tag || "test";
-
-	const cmd = [
-		DAGGER_BIN,
-		"call",
-		"push-images",
-		"--containers",
-		containerRef,
-		`--registry-address`,
-		this.registryAddress,
-		`--image-name`,
-		imageName,
-		`--tag`,
-		tag,
-		`--username`,
-		this.registryUsername,
-		`--secret`,
-		this.registrySecret,
-	].join(" ");
-	const result = runCommand(cmd, { cwd: PIPELINE_DIR });
-
-	// Dagger skriver fel till stdout, inte stderr
-	const fullOutput = (result.output || "") + (result.error || "");
-	if (result.status !== 0 || fullOutput.includes("Error:")) {
-		// Extrahera endast relevant felmeddelande
-		const errorMatch = result.error.match(/Error: ([^\n]+)/);
-		const errorMsg = errorMatch
-			? errorMatch[1]
-			: result.error || "Push misslyckades";
-		return {
-			success: false,
-			output: result.output,
-			error: errorMsg,
-			status: result.status,
-		};
-	}
-	return result;
-}
-
-// ---- Scenario: Tester körs ----
-
-Given("en testmapp finns", async function () {
-	// Nollställ state
-	this.ciRan = false;
-	this.testsPassed = false;
-	this.imagePublished = false;
-	this.testDir = FIXTURE_DIR;
-
-	const goModPath = path.join(this.testDir, "go.mod");
-	const fs = await import("node:fs/promises");
-	try {
-		await fs.access(goModPath);
-	} catch {
-		throw new Error(`Testmapp saknas: ${goModPath}`);
-	}
-});
 
 When("CI-flödet körs", async function () {
 	const cmd = [
 		DAGGER_BIN,
 		"call",
-		"unit-tests",
+		"run-tests",
 		`--source-dir`,
 		`${this.testDir}`,
 	].join(" ");
@@ -377,3 +220,95 @@ Then("ska nästa version vara {string}", function (expectedVersion) {
 		`Förväntade version ${expectedVersion}, fick: ${this.semVerResult}`,
 	);
 });
+
+// ============================================
+// Hjälpfunktioner
+// ============================================
+
+/**
+ * Sätter upp registry-uppgifter
+ */
+function setupRegistryCredentials(credentials) {
+	this.registryAddress = process.env.REGISTRY_ADDRESS || "ghcr.io/simon";
+	this.registryUsername = credentials.username;
+	this.registrySecret = credentials.secret;
+	this.skipPublish = !credentials.username || !credentials.secret;
+
+	if (credentials.valid === false) {
+		this.authFailure = true;
+	}
+}
+
+/**
+ * Sätter build-resultat på this
+ */
+function setBuildResult(result) {
+	this.buildOutput = result.output;
+	this.buildSuccess = result.success;
+	this.buildError = result.error;
+}
+
+/**
+ * Bygger en Docker-image via Dagger
+ */
+async function buildImage(options = {}) {
+	const sourceDir = options.sourceDir || this.testDir;
+	const { PIPELINE_DIR: PIPELINE, DAGGER_BIN: BIN } = await import(
+		"./shared.steps.js"
+	);
+
+	const cmd = [BIN, "call", "build-image", `--source-dir`, sourceDir].join(" ");
+	const result = runCommand(cmd, { cwd: PIPELINE });
+	// Extrahera container reference från output
+	if (result.success && result.output) {
+		result.output = result.output.trim();
+	}
+	return result;
+}
+
+/**
+ * Pushar en Docker-image till registry
+ */
+async function pushImage(containerRef, options = {}) {
+	const imageName = options.imageName || "test-image";
+	const tag = options.tag || "test";
+	const { PIPELINE_DIR: PIPELINE, DAGGER_BIN: BIN } = await import(
+		"./shared.steps.js"
+	);
+
+	const cmd = [
+		BIN,
+		"call",
+		"push-images",
+		"--containers",
+		containerRef,
+		`--registry-address`,
+		this.registryAddress,
+		`--image-name`,
+		imageName,
+		`--tag`,
+		tag,
+		`--username`,
+		this.registryUsername,
+		`--secret`,
+		this.registrySecret,
+	].join(" ");
+	const result = runCommand(cmd, { cwd: PIPELINE });
+
+	// Dagger skriver fel till stdout, inte stderr
+	const fullOutput = (result.output || "") + (result.error || "");
+	if (result.status !== 0 || fullOutput.includes("Error:")) {
+		// Extrahera endast relevant felmeddelande
+		const errorMatch = result.error.match(/Error: ([^\n]+)/);
+		const errorMsg = errorMatch
+			? errorMatch[1]
+			: result.error || "Push misslyckades";
+		return {
+			success: false,
+			output: result.output,
+			error: errorMsg,
+			status: result.status,
+		};
+	}
+	return result;
+}

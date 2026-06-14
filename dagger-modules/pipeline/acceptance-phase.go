@@ -17,7 +17,8 @@ func (pipeline *Pipeline) AcceptancePhase(
 	logs := "🚀 Startar Acceptance-testworkflow...\n"
 
 	// Kör tester MEDtaggen "not @commit" för att exkludera commit-tester
-	testLogs, err := pipeline.RunTests(ctx, sourceDir, "not @commit")
+	notCommitTag := "not @commit"
+	testLogs, err := pipeline.RunTests(ctx, sourceDir, &notCommitTag)
 	if err != nil {
 		return logs + fmt.Sprintf("❌ Acceptance-tester misslyckades: %v\n", err), err
 	}

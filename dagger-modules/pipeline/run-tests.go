@@ -9,29 +9,34 @@ import (
 )
 
 // RunTests kör tester med taggfilter
-// tagFilter: cucumber-tag att filtrera på (t.ex. "@commit", "@ci", "not @commit"). Tom sträng = kör alla.
-func (pipeline *Pipeline) RunTests(ctx context.Context, sourceDir *dagger.Directory, tagFilter string) (string, error) {
+// tagFilter: cucumber-tag att filtrera på (t.ex. "@commit", "@ci", "not @commit"). Nil eller tom sträng = kör alla.
+func (pipeline *Pipeline) RunTests(ctx context.Context, sourceDir *dagger.Directory, tagFilter *string) (string, error) {
 	start := time.Now()
 	logs := "🧪 Kör unit tester...\n"
 
-	if tagFilter != "" {
-		logs += fmt.Sprintf("🏷️  Filtrerar på tagg: %s\n", tagFilter)
+	tagFilterValue := ""
+	if tagFilter != nil {
+		tagFilterValue = *tagFilter
+	}
+
+	if tagFilterValue != "" {
+		logs += fmt.Sprintf("🏷️  Filtrerar på tagg: %s\n", tagFilterValue)
 	}
 
 	projectLanguage := detectProjectLanguage(ctx, sourceDir)
 	switch projectLanguage {
 	case "javascript":
-		testLogs := javascriptTests(ctx, sourceDir, tagFilter)
+		testLogs := javascriptTests(ctx, sourceDir, tagFilterValue)
 		logs += testLogs
 	case "go":
-		testLogs, err := goTests(ctx, sourceDir, tagFilter)
+		testLogs, err := goTests(ctx, sourceDir, tagFilterValue)
 		if err != nil {
 			logs += fmt.Sprintf("❌ Fel vid körning av Go-tester: %v\n", err)
 		} else {
 			logs += testLogs
 		}
 	case "java":
-		testLogs, err := javaTests(ctx, sourceDir, tagFilter)
+		testLogs, err := javaTests(ctx, sourceDir, tagFilterValue)
 		if err != nil {
 			logs += fmt.Sprintf("❌ Fel vid körning av Java-tester: %v\n", err)
 		} else {
