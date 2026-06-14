@@ -37,6 +37,7 @@ jobs:
           module: ./dagger-modules/pipeline
           workdir: ./pipeline
           args: |
-            commit-phase --source-dir ../app --registry-address ${{ vars.REGISTRY_ADDRESS }} --image-name ${{ inputs.image-name || github.event.repository.name }} --username ${{ vars.REGISTRY_USERNAME }} --secret "${{ secrets.REGISTRY_PASSWORD }}" --multi-arch true
+            commit-phase --source-dir ../app --registry-address ${{ vars.REGISTRY_ADDRESS }} --image-name ${{ inputs.image-name || github.event.repository.name }} --username ${{ vars.REGISTRY_USERNAME }} --secret "$REGISTRY_PASSWORD" --multi-arch true
         env:
           DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
