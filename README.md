@@ -1,6 +1,7 @@
 # Deployment Pipeline
 
-Mall för CI/CD-pipelines med Dagger, Argo Workflows och GitHub Actions.
+Mall för CI/CD-pipelines i Dagger som kan triggas via Argo Workflows eller
+GitHub Actions.
 
 ## Pipeline-steg
 
@@ -20,7 +21,7 @@ Mall för CI/CD-pipelines med Dagger, Argo Workflows och GitHub Actions.
 
 ### GitHub Actions
 
-Kopiera `workflows/github-actions/dagger.yaml` till din repo.
+Kopiera `workflows/github-actions/minimal.yaml` till din repo.
 
 ### Argo Workflows
 
