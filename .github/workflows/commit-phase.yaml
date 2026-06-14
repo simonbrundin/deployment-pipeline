@@ -21,13 +21,13 @@ jobs:
         with:
           path: app
           sparse-checkout: |
-            ${{ inputs.source-dir == '.' && '.' || inputs.source-dir }}
+            ${{ inputs.source-dir }}
 
       - name: Hämta Pipeline
         uses: actions/checkout@v4
         with:
           repository: simonbrundin/deployment-pipeline
-          ref: refs/tags/v1.3 # Använd tagg för stabil version
+          ref: refs/tags/v1.6
           path: pipeline
 
       - name: Kör Commit Phase
@@ -37,7 +37,7 @@ jobs:
           module: ./pipeline/dagger-modules/pipeline
           args: |
             commit-phase
-            --source-dir ${{ inputs.source-dir == '.' && 'app' || 'app/' + inputs.source-dir }}
+            --source-dir app/${{ inputs.source-dir }}
             --registry-address ${{ vars.REGISTRY_ADDRESS }}
             --image-name ${{ inputs.image-name || github.event.repository.name }}
             --username ${{ vars.REGISTRY_USERNAME }}
