@@ -19,7 +19,12 @@ func (pipeline *Pipeline) GetLatestTag(ctx context.Context, sourceDir *dagger.Di
 		return "", fmt.Errorf("failed to get latest tag: %w", err)
 	}
 
-	tag := strings.TrimSpace(result.Stdout)
+	stdout, err := result.Stdout(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to read stdout: %w", err)
+	}
+
+	tag := strings.TrimSpace(stdout)
 	tag = strings.TrimPrefix(tag, "frontend-")
 	return tag, nil
 }
@@ -36,5 +41,10 @@ func (pipeline *Pipeline) GetCommitsSinceTag(ctx context.Context, sourceDir *dag
 		return "", fmt.Errorf("failed to get commits: %w", err)
 	}
 
-	return result.Stdout, nil
+	stdout, err := result.Stdout(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to read stdout: %w", err)
+	}
+
+	return stdout, nil
 }
