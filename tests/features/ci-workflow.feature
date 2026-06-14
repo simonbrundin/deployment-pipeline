@@ -32,3 +32,21 @@ Feature: CI-workflow
     Given registry-uppgifter är tillgängliga men felaktiga
     When pipelinen försöker publicera imagen
     Then ska ett autentiseringsfel visas
+
+  @ci @version @semver
+  Scenario: Image-tagg baseras på nästa semver-version
+    Given det finns en image version "v1.0.0"
+    When version-increment-åtgärden körs med commit "feat: new feature"
+    Then ska nästa version vara "v1.1.0"
+
+  @ci @version @semver
+  Scenario: Patch-bump vid buggfix
+    Given det finns en image version "v1.0.0"
+    When version-increment-åtgärden körs med commit "fix: bug fix"
+    Then ska nästa version vara "v1.0.1"
+
+  @ci @version @semver
+  Scenario: Major-bump vid breaking change
+    Given det finns en image version "v1.0.0"
+    When version-increment-åtgärden körs med commit "BREAKING CHANGE: new API"
+    Then ska nästa version vara "v2.0.0"

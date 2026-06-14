@@ -43,6 +43,16 @@ function runCommand(cmd, options = {}) {
 }
 
 /**
+ * Extraherar semver-version (t.ex. v1.2.3) från text
+ * @param {string} text - Text att söka i
+ * @returns {string|null} - Versionen eller null om ingen hittades
+ */
+function extractSemVer(text) {
+	const match = text.match(/\bv(\d+\.\d+\.\d+)\b/);
+	return match ? `v${match[1]}` : null;
+}
+
+/**
  * Sätter upp registry-uppgifter
  * @param {Object} credentials - { username, secret, valid }
  */
@@ -323,5 +333,47 @@ Then("imagen ska finnas i registry", async function () {
 	assert.ok(
 		this.pushOutput.includes("Push klar") || this.pushOutput.includes("✅"),
 		"Ser inte bekräftelse på att imagen pushades",
+	);
+});
+
+// ---- Scenario: Image-tagg baseras på nästa semver-version ----
+
+Given("det finns en image version {string}", function (version) {
+	this.currentVersion = version;
+});
+
+When(
+	"version-increment-åtgärden körs med commit {string}",
+	async function (commitMessage) {
+		// Escape the commit message for shell (handle spaces and special chars)
+		const escapedMessage = commitMessage.replace(/'/g, "'\\''");
+		const cmd = [
+			DAGGER_BIN,
+			"call",
+			"sem-ver-bump",
+			"--current-version",
+			this.currentVersion,
+			"--commit-message",
+			`'${escapedMessage}'`,
+		].join(" ");
+
+		const result = runCommand(cmd, { cwd: PIPELINE_DIR });
+		this.semverOutput = result.output;
+		this.semverError = result.error;
+		this.semverSuccess = result.success;
+		this.semVerResult = extractSemVer(result.output);
+	},
+);
+
+Then("ska nästa version vara {string}", function (expectedVersion) {
+	assert.strictEqual(
+		this.semverSuccess,
+		true,
+		`Semver-bump misslyckades: ${this.semverError}`,
+	);
+	assert.strictEqual(
+		this.semVerResult,
+		expectedVersion,
+		`Förväntade version ${expectedVersion}, fick: ${this.semVerResult}`,
 	);
 });
