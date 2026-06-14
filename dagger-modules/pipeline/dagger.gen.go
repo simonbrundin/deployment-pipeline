@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	"dagger/pipeline/internal/dagger"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -17,6 +16,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.opentelemetry.io/otel/trace"
+
+	"dagger/pipeline/internal/dagger"
 
 	"github.com/dagger/querybuilder"
 )
@@ -59,22 +60,16 @@ func convertSlice[I any, O any](in []I, f func(I) O) []O {
 }
 
 func (r Pipeline) MarshalJSON() ([]byte, error) {
-	var concrete struct {
-		Pipeline any
-	}
-	concrete.Pipeline = r.Pipeline
+	var concrete struct{}
 	return json.Marshal(&concrete)
 }
 
 func (r *Pipeline) UnmarshalJSON(bs []byte) error {
-	var concrete struct {
-		Pipeline any
-	}
+	var concrete struct{}
 	err := json.Unmarshal(bs, &concrete)
 	if err != nil {
 		return err
 	}
-	r.Pipeline = concrete.Pipeline
 	return nil
 }
 
@@ -150,7 +145,6 @@ func findSingleGQLError(rerr error) *gqlerror.Error {
 		return nil
 	}
 }
-
 func dispatch(ctx context.Context) (rerr error) {
 	ctx = telemetry.InitEmbedded(ctx, resource.NewWithAttributes(
 		semconv.SchemaURL,
@@ -217,7 +211,6 @@ func dispatch(ctx context.Context) (rerr error) {
 	}
 	return nil
 }
-
 func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName string, inputArgs map[string][]byte) (_ any, err error) {
 	_ = inputArgs
 	switch parentName {
@@ -363,6 +356,27 @@ func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName st
 				}
 			}
 			return (*Pipeline).PushImages(&parent, ctx, containers, registryAddress, imageName, tag, username, secret)
+		case "SemVerBump":
+			var parent Pipeline
+			err = json.Unmarshal(parentJSON, &parent)
+			if err != nil {
+				panic(fmt.Errorf("%s: %w", "failed to unmarshal parent object", err))
+			}
+			var currentVersion string
+			if inputArgs["currentVersion"] != nil {
+				err = json.Unmarshal([]byte(inputArgs["currentVersion"]), &currentVersion)
+				if err != nil {
+					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg currentVersion", err))
+				}
+			}
+			var commitMessage string
+			if inputArgs["commitMessage"] != nil {
+				err = json.Unmarshal([]byte(inputArgs["commitMessage"]), &commitMessage)
+				if err != nil {
+					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg commitMessage", err))
+				}
+			}
+			return (*Pipeline).SemVerBump(&parent, currentVersion, commitMessage)
 		case "UnitTests":
 			var parent Pipeline
 			err = json.Unmarshal(parentJSON, &parent)
