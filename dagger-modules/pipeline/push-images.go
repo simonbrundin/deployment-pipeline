@@ -33,21 +33,24 @@ func (pipeline *Pipeline) PushImages(
 	}
 	secret := dag.SetSecret("password", token)
 
-	// Lägg till autentisering för alla containers
-	var authContainers []*dagger.Container
-	for _, container := range containers {
+	// Lägg till autentisering och pusha direkt på varje container
+	for i, container := range containers {
 		authContainer := container.WithRegistryAuth(registryAddress, username, secret)
-		authContainers = append(authContainers, authContainer)
-	}
-
-	// Publicera image (single eller multi-arch)
-	_, err := dag.Container().
-		Publish(ctx, fullImageName, dagger.ContainerPublishOpts{
-			PlatformVariants: authContainers,
-		})
-	if err != nil {
-		logs += fmt.Sprintf("❌ Push misslyckades: %v\n", err)
-		return logs, err
+		// För multi-arch, använd första containern för push med PlatformVariants
+		if i == 0 {
+			var allAuthContainers []*dagger.Container
+			for _, c := range containers {
+				allAuthContainers = append(allAuthContainers, c.WithRegistryAuth(registryAddress, username, secret))
+			}
+			_, err := authContainer.Publish(ctx, fullImageName, dagger.ContainerPublishOpts{
+				PlatformVariants: allAuthContainers,
+			})
+			if err != nil {
+				logs += fmt.Sprintf("❌ Push misslyckades: %v\n", err)
+				return logs, err
+			}
+			break
+		}
 	}
 
 	logs += fmt.Sprintf("✅ Push klar! Tid: %ds\n", int(time.Since(start).Seconds()))
