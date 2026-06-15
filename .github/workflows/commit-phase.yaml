@@ -18,6 +18,8 @@ on:
 jobs:
   commit-phase:
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
     steps:
       - name: Hämta app
         uses: actions/checkout@v4
