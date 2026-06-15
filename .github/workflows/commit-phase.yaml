@@ -11,6 +11,11 @@ on:
         required: false
         default: ""
         type: string
+    secrets:
+      REGISTRY_PASSWORD:
+        required: true
+      DAGGER_CLOUD_TOKEN:
+        required: false
 
 jobs:
   commit-phase:
