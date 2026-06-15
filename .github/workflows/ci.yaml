@@ -5,8 +5,8 @@ on: workflow_dispatch
 
 jobs:
   commit:
-    uses: simonbrundin/deployment-pipeline/.github/workflows/commit-phase.yaml@v1
+    uses: simonbrundin/deployment-pipeline/.github/workflows/commit-phase.yaml@main
 
   acceptance:
     needs: commit
-    uses: simonbrundin/deployment-pipeline/.github/workflows/acceptance-phase.yaml@v1
+    uses: simonbrundin/deployment-pipeline/.github/workflows/acceptance-phase.yaml@main
