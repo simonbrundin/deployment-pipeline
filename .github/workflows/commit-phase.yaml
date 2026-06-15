@@ -11,6 +11,14 @@ on:
         required: false
         default: ""
         type: string
+      registry-address:
+        required: false
+        default: ""
+        type: string
+      registry-username:
+        required: false
+        default: ""
+        type: string
     secrets:
       REGISTRY_PASSWORD:
         required: false
@@ -37,12 +45,20 @@ jobs:
 
       - name: Verifiera registry-åtkomst
         run: |
+          REGISTRY="${{ inputs.registry-address }}"
+          if [ -z "$REGISTRY" ]; then
+            REGISTRY="ghcr.io/${{ github.repository_owner }}"
+          fi
           TOKEN="${{ secrets.REGISTRY_PASSWORD }}"
           if [ -z "$TOKEN" ]; then
             echo "REGISTRY_PASSWORD is empty, using GITHUB_TOKEN"
             TOKEN="${{ secrets.GITHUB_TOKEN }}"
           fi
-          echo "$TOKEN" | docker login ${{ vars.REGISTRY_ADDRESS }} -u ${{ vars.REGISTRY_USERNAME }} --password-stdin
+          USERNAME="${{ inputs.registry-username }}"
+          if [ -z "$USERNAME" ]; then
+            USERNAME="${{ github.actor }}"
+          fi
+          echo "$TOKEN" | docker login "$REGISTRY" -u "$USERNAME" --password-stdin
 
       - name: Kör Commit Phase
         uses: dagger/dagger-for-github@v8.3.0
@@ -50,7 +66,7 @@ jobs:
           verb: call
           module: ./dagger-modules/pipeline
           workdir: ./pipeline
-          call: commit-phase --source-dir ../app/${{ inputs.source-dir }} --registry-address ${{ vars.REGISTRY_ADDRESS }} --image-name ${{ inputs.image-name || github.event.repository.name }} --username ${{ vars.REGISTRY_USERNAME }} --multi-arch
+          call: commit-phase --source-dir ../app/${{ inputs.source-dir }} --registry-address ${{ inputs.registry-address || format('ghcr.io/{0}', github.repository_owner) }} --image-name ${{ inputs.image-name || github.event.repository.name }} --username ${{ inputs.registry-username || github.actor }} --multi-arch
         env:
           DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
