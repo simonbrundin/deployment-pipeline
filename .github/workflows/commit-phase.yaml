@@ -1,70 +1,59 @@
 name: Commit Phase
 
 on:
-  workflow_call:
-    inputs:
-      source-dir:
-        required: false
-        default: "."
-        type: string
-      image-name:
-        required: false
-        default: ""
-        type: string
-      registry-address:
-        required: false
-        default: ""
-        type: string
-      registry-username:
-        required: false
-        default: ""
-        type: string
-    secrets:
-      REGISTRY_PASSWORD:
-        required: false
-      DAGGER_CLOUD_TOKEN:
-        required: false
+    workflow_call:
+      inputs:
+        source-dir:
+                required: false
+                default: "."
+                type: string
+        image-name:
+                required: false
+                default: ""
+                type: string
+      secrets:
+        REGISTRY_PASSWORD:
+                required: false
+        DAGGER_CLOUD_TOKEN:
+                required: false
+      outputs:
+        image-digest:
+                description: "The full image digest (sha256:...)"
+                value: ${{ jobs.commit-phase.outputs.image-digest }}
 
 jobs:
-  commit-phase:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Hämta app
-        uses: actions/checkout@v4
-        with:
-          path: app
+    commit-phase:
+      runs-on: ubuntu-latest
+      outputs:
+        image-digest: ${{ steps.commit.outputs.image-digest }}
+      steps:
+        - name: Hämta app
+                uses: actions/checkout@v4
+                with:
+                    path: app
+                    sparse-checkout: |
+                        ${{ inputs.source-dir }}
 
-      - name: Hämta Pipeline
-        uses: actions/checkout@v4
-        with:
-          repository: simonbrundin/deployment-pipeline
-          ref: refs/heads/main
-          path: pipeline
+        - name: Hämta Pipeline
+                uses: actions/checkout@v4
+                with:
+                    repository: simonbrundin/deployment-pipeline
+                    ref: refs/tags/v1.6
+                    path: pipeline
 
-      - name: Verifiera registry-åtkomst
-        run: |
-          REGISTRY="${{ inputs.registry-address }}"
-          if [ -z "$REGISTRY" ]; then
-            REGISTRY="ghcr.io/${{ github.repository_owner }}"
-          fi
-          TOKEN="${{ secrets.REGISTRY_PASSWORD }}"
-          if [ -z "$TOKEN" ]; then
-            echo "REGISTRY_PASSWORD is empty, using GITHUB_TOKEN"
-            TOKEN="${{ secrets.GITHUB_TOKEN }}"
-          fi
-          USERNAME="${{ inputs.registry-username }}"
-          if [ -z "$USERNAME" ]; then
-            USERNAME="${{ github.actor }}"
-          fi
-          echo "$TOKEN" | docker login "$REGISTRY" -u "$USERNAME" --password-stdin
-
-      - name: Kör Commit Phase
-        uses: dagger/dagger-for-github@v8.3.0
-        with:
-          verb: call
-          module: ./dagger-modules/pipeline
-          workdir: ./pipeline
-          args: commit-phase --source-dir ../app/${{ inputs.source-dir }} --registry-address ${{ inputs.registry-address }} --image-name ${{ inputs.image-name || github.event.repository.name }} --username ${{ inputs.registry-username || github.actor }} --multi-arch
-        env:
-          DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}
-          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        - name: Kör Commit Phase
+                id: commit
+                uses: dagger/dagger-for-github@v8.3.0
+                with:
+                    verb: call
+                    module: ./pipeline/dagger-modules/pipeline
+                    args: |
+                        commit-phase
+                        --source-dir app/${{ inputs.source-dir }}
+                        --registry-address ${{ vars.REGISTRY_ADDRESS }}
+                        --image-name ${{ inputs.image-name || github.event.repository.name }}
+                        --username ${{ vars.REGISTRY_USERNAME }}
+                        --secret ${{ secrets.REGISTRY_PASSWORD }}
+                        --multi-arch true
+                env:
+                    DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}

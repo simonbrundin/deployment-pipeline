@@ -1,34 +1,44 @@
 name: Acceptance Phase
 
 on:
-  workflow_call:
-    inputs:
-      source-dir:
-        required: false
-        default: "."
-        type: string
+    workflow_call:
+      inputs:
+        source-dir:
+                required: false
+                default: "."
+                type: string
+        image-digest:
+                required: false
+                default: ""
+                type: string
+      secrets:
+        DAGGER_CLOUD_TOKEN:
+                required: false
 
 jobs:
-  acceptance-phase:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Hämta app
-        uses: actions/checkout@v4
-        with:
-          path: app
+    acceptance-phase:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Hämta app
+                uses: actions/checkout@v4
+                with:
+                    path: app
 
-      - name: Hämta Pipeline
-        uses: actions/checkout@v4
-        with:
-          repository: simonbrundin/deployment-pipeline
-          ref: refs/tags/v1
-          path: pipeline
+        - name: Hämta Pipeline
+                uses: actions/checkout@v4
+                with:
+                    repository: simonbrundin/deployment-pipeline
+                    ref: refs/tags/v1.6
+                    path: pipeline
 
-      - name: Kör Acceptance Phase
-        uses: dagger/dagger-for-github@v8.3.0
-        with:
-          verb: call
-          module: ./pipeline/dagger-modules/pipeline
-          args: acceptance-phase --source-dir app/${{ inputs.source-dir }}
-        env:
-          DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}
+        - name: Kör Acceptance Phase
+                uses: dagger/dagger-for-github@v8.3.0
+                with:
+                    verb: call
+                    module: ./pipeline/dagger-modules/pipeline
+                    args: |
+                        acceptance-phase
+                        --source-dir app/${{ inputs.source-dir }}
+                        --image-digest ${{ inputs.image-digest }}
+                env:
+                    DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}
