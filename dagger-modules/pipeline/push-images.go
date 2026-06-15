@@ -4,6 +4,7 @@ import (
 	"context"
 	"dagger/pipeline/internal/dagger"
 	"fmt"
+	"os"
 	"time"
 )
 
@@ -15,7 +16,6 @@ func (pipeline *Pipeline) PushImages(
 	imageName string,
 	tag string,
 	username string,
-	registrySecret *dagger.Secret,
 ) (string, error) {
 	start := time.Now()
 	archType := "single"
@@ -26,14 +26,20 @@ func (pipeline *Pipeline) PushImages(
 	logs := fmt.Sprintf("📤 Pushar %s image %s:%s till %s...\n", archType, imageName, tag, registryAddress)
 	fullImageName := fmt.Sprintf("%s/%s:%s", registryAddress, imageName, tag)
 
+	// Läs token från miljövariabel
+	var secret *dagger.Secret
+	if token := os.Getenv("REGISTRY_PASSWORD"); token != "" {
+		secret = dag.SetSecret("password", token)
+	}
+
 	// Lägg till autentisering och pusha direkt på varje container
 	for i, container := range containers {
-		authContainer := container.WithRegistryAuth(registryAddress, username, registrySecret)
+		authContainer := container.WithRegistryAuth(registryAddress, username, secret)
 		// För multi-arch, använd första containern för push med PlatformVariants
 		if i == 0 {
 			var allAuthContainers []*dagger.Container
 			for _, c := range containers {
-				allAuthContainers = append(allAuthContainers, c.WithRegistryAuth(registryAddress, username, registrySecret))
+				allAuthContainers = append(allAuthContainers, c.WithRegistryAuth(registryAddress, username, secret))
 			}
 			_, err := authContainer.Publish(ctx, fullImageName, dagger.ContainerPublishOpts{
 				PlatformVariants: allAuthContainers,

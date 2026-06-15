@@ -18,7 +18,6 @@ func (pipeline *Pipeline) CommitPhase(
 	imageName string,
 	username string,
 	multiArch bool,
-	registrySecret *dagger.Secret,
 ) (string, error) {
 	// ---- FÖRBEREDelser ----
 	startTime := time.Now()
@@ -99,7 +98,7 @@ func (pipeline *Pipeline) CommitPhase(
 	// ============================================
 	// STEG 3: PUSHA TILL REGISTRY (GEMENSAMT!)
 	// ============================================
-	pushLogs, err := pipeline.PushImages(ctx, containers, registryAddress, imageName, tag, username, registrySecret)
+	pushLogs, err := pipeline.PushImages(ctx, containers, registryAddress, imageName, tag, username)
 	if err != nil {
 		return logs + fmt.Sprintf("❌ Push misslyckades: %v\n", err), err
 	}
