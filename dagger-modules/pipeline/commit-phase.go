@@ -101,7 +101,7 @@ func (pipeline *Pipeline) CommitPhase(
 	// ============================================
 	// STEG 3: PUSHA TILL REGISTRY (GEMENSAMT!)
 	// ============================================
-	pushLogs, err := pipeline.PushImages(ctx, containers, registryAddress, imageName, tag, username, secret)
+	pushLogs, err := pipeline.PushImages(ctx, containers, registryAddress, imageName, tag, username)
 	if err != nil {
 		return logs + fmt.Sprintf("❌ Push misslyckades: %v\n", err), err
 	}

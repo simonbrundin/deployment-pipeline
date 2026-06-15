@@ -12,8 +12,6 @@ on:
         default: ""
         type: string
     secrets:
-      REGISTRY_PASSWORD:
-        required: true
       DAGGER_CLOUD_TOKEN:
         required: false
 
@@ -42,4 +40,4 @@ jobs:
           call: commit-phase --source-dir ../app/${{ inputs.source-dir }} --registry-address ${{ vars.REGISTRY_ADDRESS }} --image-name ${{ inputs.image-name || github.event.repository.name }} --username ${{ vars.REGISTRY_USERNAME }} --multi-arch
         env:
           DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}
-          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
