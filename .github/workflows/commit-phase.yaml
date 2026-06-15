@@ -12,6 +12,8 @@ on:
         default: ""
         type: string
     secrets:
+      REGISTRY_PASSWORD:
+        required: false
       DAGGER_CLOUD_TOKEN:
         required: false
 
