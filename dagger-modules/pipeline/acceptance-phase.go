@@ -2,23 +2,20 @@ package main
 
 import (
 	"context"
-	"dagger/pipeline/internal/dagger"
 	"fmt"
 	"time"
 )
 
-// AcceptancePhase kör acceptance-tester (tester utan @commit-tagg)
+// AcceptancePhase kör acceptance-tester
 // och kan köras separat från CI-flödet för manuell verifiering.
 func (pipeline *Pipeline) AcceptancePhase(
 	ctx context.Context,
-	sourceDir *dagger.Directory,
 ) (string, error) {
 	startTime := time.Now()
 	logs := "🚀 Startar Acceptance-testworkflow...\n"
 
-	// Kör tester MEDtaggen "not @commit" för att exkludera commit-tester
-	notCommitTag := "not @commit"
-	testLogs, err := pipeline.RunTests(ctx, sourceDir, &notCommitTag)
+	// Kör tester
+	testLogs, err := pipeline.RunTests(ctx)
 	if err != nil {
 		return logs + fmt.Sprintf("❌ Acceptance-tester misslyckades: %v\n", err), err
 	}

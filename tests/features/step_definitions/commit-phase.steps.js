@@ -276,6 +276,7 @@ async function pushImage(containerRef, options = {}) {
 		"./shared.steps.js"
 	);
 
+	// Dagger push-images läser lösenordet från REGISTRY_PASSWORD miljövariabel
 	const cmd = [
 		BIN,
 		"call",
@@ -290,10 +291,15 @@ async function pushImage(containerRef, options = {}) {
 		tag,
 		`--username`,
 		this.registryUsername,
-		`--secret`,
-		this.registrySecret,
 	].join(" ");
-	const result = runCommand(cmd, { cwd: PIPELINE });
+
+	// Skicka lösenordet via miljövariabel
+	const env = {};
+	if (this.registrySecret) {
+		env.REGISTRY_PASSWORD = this.registrySecret;
+	}
+
+	const result = runCommand(cmd, { cwd: PIPELINE, env });
 
 	// Dagger skriver fel till stdout, inte stderr
 	const fullOutput = (result.output || "") + (result.error || "");

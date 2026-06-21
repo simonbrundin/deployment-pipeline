@@ -62,10 +62,9 @@ func (pipeline *Pipeline) CommitPhase(
 	tag := fmt.Sprintf("frontend-%s", newVersion)
 
 	// ============================================
-	// STEG 1: KÖR ENHETSTESTER (endast @commit-taggen)
+	// STEG 1: KÖR ENHETSTESTER
 	// ============================================
-	commitTag := "@commit"
-	testLogs, err := pipeline.RunTests(ctx, sourceDir, &commitTag)
+	testLogs, err := pipeline.RunTests(ctx)
 	if err != nil {
 		return logs + fmt.Sprintf("❌ Test misslyckades: %v\n", err), err
 	}

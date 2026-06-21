@@ -27,10 +27,11 @@ func (pipeline *Pipeline) PushImages(
 	fullImageName := fmt.Sprintf("%s/%s:%s", registryAddress, imageName, tag)
 
 	// Läs token från miljövariabel
-	var secret *dagger.Secret
-	if token := os.Getenv("REGISTRY_PASSWORD"); token != "" {
-		secret = dag.SetSecret("password", token)
+	token := os.Getenv("REGISTRY_PASSWORD")
+	if token == "" {
+		return logs + "❌ REGISTRY_PASSWORD miljövariabel saknas\n", fmt.Errorf("REGISTRY_PASSWORD is required")
 	}
+	secret := dag.SetSecret("registry-password", token)
 
 	// Lägg till autentisering och pusha direkt på varje container
 	for i, container := range containers {

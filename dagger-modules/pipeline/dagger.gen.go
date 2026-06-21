@@ -222,14 +222,7 @@ func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName st
 			if err != nil {
 				panic(fmt.Errorf("%s: %w", "failed to unmarshal parent object", err))
 			}
-			var sourceDir *dagger.Directory
-			if inputArgs["sourceDir"] != nil {
-				err = json.Unmarshal([]byte(inputArgs["sourceDir"]), &sourceDir)
-				if err != nil {
-					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg sourceDir", err))
-				}
-			}
-			return (*Pipeline).AcceptancePhase(&parent, ctx, sourceDir)
+			return (*Pipeline).AcceptancePhase(&parent, ctx)
 		case "BuildImage":
 			var parent Pipeline
 			err = json.Unmarshal(parentJSON, &parent)
@@ -299,13 +292,6 @@ func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName st
 					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg username", err))
 				}
 			}
-			var secret string
-			if inputArgs["secret"] != nil {
-				err = json.Unmarshal([]byte(inputArgs["secret"]), &secret)
-				if err != nil {
-					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg secret", err))
-				}
-			}
 			var multiArch bool
 			if inputArgs["multiArch"] != nil {
 				err = json.Unmarshal([]byte(inputArgs["multiArch"]), &multiArch)
@@ -313,7 +299,7 @@ func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName st
 					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg multiArch", err))
 				}
 			}
-			return (*Pipeline).CommitPhase(&parent, sourceDir, registryAddress, imageName, username, secret, multiArch)
+			return (*Pipeline).CommitPhase(&parent, sourceDir, registryAddress, imageName, username, multiArch)
 		case "GetCommitsSinceTag":
 			var parent Pipeline
 			err = json.Unmarshal(parentJSON, &parent)
@@ -390,35 +376,14 @@ func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName st
 					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg username", err))
 				}
 			}
-			var secret string
-			if inputArgs["secret"] != nil {
-				err = json.Unmarshal([]byte(inputArgs["secret"]), &secret)
-				if err != nil {
-					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg secret", err))
-				}
-			}
-			return (*Pipeline).PushImages(&parent, ctx, containers, registryAddress, imageName, tag, username, secret)
+			return (*Pipeline).PushImages(&parent, ctx, containers, registryAddress, imageName, tag, username)
 		case "RunTests":
 			var parent Pipeline
 			err = json.Unmarshal(parentJSON, &parent)
 			if err != nil {
 				panic(fmt.Errorf("%s: %w", "failed to unmarshal parent object", err))
 			}
-			var sourceDir *dagger.Directory
-			if inputArgs["sourceDir"] != nil {
-				err = json.Unmarshal([]byte(inputArgs["sourceDir"]), &sourceDir)
-				if err != nil {
-					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg sourceDir", err))
-				}
-			}
-			var tagFilter *string
-			if inputArgs["tagFilter"] != nil {
-				err = json.Unmarshal([]byte(inputArgs["tagFilter"]), &tagFilter)
-				if err != nil {
-					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg tagFilter", err))
-				}
-			}
-			return (*Pipeline).RunTests(&parent, ctx, sourceDir, tagFilter)
+			return (*Pipeline).RunTests(&parent, ctx)
 		case "SemVerBump":
 			var parent Pipeline
 			err = json.Unmarshal(parentJSON, &parent)

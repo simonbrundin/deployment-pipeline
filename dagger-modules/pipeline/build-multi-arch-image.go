@@ -55,7 +55,7 @@ func (pipeline *Pipeline) BuildMultiArchImage(ctx context.Context, sourceDir *da
 
 		// Skapa delad Go-builder cache för båda arkitekturerna
 		goCacheImage := dag.Container().
-			From("golang:1.23-alpine").
+			From("golang:1.26-alpine").
 			WithWorkdir("/src").
 			WithDirectory("/src", sourceDir).
 			// Montera Go module cache - återanvänds mellan arkitekturer!
