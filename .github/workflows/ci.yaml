@@ -14,8 +14,7 @@ on:
         type: string
         default: "."
       test-command:
-        description:
-          "Shell-kommando att installera dependencies och köra tester"
+        description: "Shell-kommando att installera dependencies och köra tester"
         type: string
 jobs:
   unit-tests:
