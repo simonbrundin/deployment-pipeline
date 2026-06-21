@@ -1,4 +1,4 @@
-name: CI
+name: Bygg och publicera image
 on:
   workflow_call:
     secrets:

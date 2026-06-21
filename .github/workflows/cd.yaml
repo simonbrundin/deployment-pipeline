@@ -1,0 +1,36 @@
+name: CD
+on:
+  workflow_call:
+    secrets:
+      REGISTRY_TOKEN:
+        required: false
+    inputs:
+      dockerfile:
+        description: "Sökväg till Dockerfile (t.ex. frontend/Dockerfile)"
+        type: string
+        default: "Dockerfile"
+      dockerfile-context:
+        description: "Build context (t.ex. frontend/)"
+        type: string
+        default: "."
+jobs:
+  gherkin-tests:
+    name: Kör Gherkin tester
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ inputs.dockerfile-context }}
+          file: ${{ inputs.dockerfile }}
+          push: false
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
