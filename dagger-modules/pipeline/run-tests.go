@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"dagger/pipeline/internal/dagger"
 )
 
 // RunTests kör tester via cd ./tests && bun run test
-func (pipeline *Pipeline) RunTests(ctx context.Context) (string, error) {
+func (pipeline *Pipeline) RunTests(ctx context.Context, sourceDir *dagger.Directory) (string, error) {
 	start := time.Now()
 	logs := "🧪 Kör tester...\n"
 
@@ -16,6 +18,7 @@ func (pipeline *Pipeline) RunTests(ctx context.Context) (string, error) {
 		From("oven/bun:latest").
 		WithWorkdir("/app").
 		WithMountedCache("/root/.bun", dag.CacheVolume("bun-cache")).
+		WithDirectory("/app", sourceDir).
 		WithExec([]string{"sh", "-c", "cd tests && bun test"})
 
 	stdout, err := container.Stdout(ctx)

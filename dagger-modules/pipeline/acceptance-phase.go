@@ -23,7 +23,7 @@ func (pipeline *Pipeline) AcceptancePhase(
 	}
 
 	// Kör tester
-	testLogs, err := pipeline.RunTests(ctx)
+	testLogs, err := pipeline.RunTests(ctx, sourceDir)
 	if err != nil {
 		return logs + fmt.Sprintf("❌ Acceptance-tester misslyckades: %v\n", err), err
 	}

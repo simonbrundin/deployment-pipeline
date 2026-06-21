@@ -64,7 +64,7 @@ func (pipeline *Pipeline) CommitPhase(
 	// ============================================
 	// STEG 1: KÖR ENHETSTESTER
 	// ============================================
-	testLogs, err := pipeline.RunTests(ctx)
+	testLogs, err := pipeline.RunTests(ctx, sourceDir)
 	if err != nil {
 		return logs + fmt.Sprintf("❌ Test misslyckades: %v\n", err), err
 	}

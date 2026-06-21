@@ -397,7 +397,14 @@ func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName st
 			if err != nil {
 				panic(fmt.Errorf("%s: %w", "failed to unmarshal parent object", err))
 			}
-			return (*Pipeline).RunTests(&parent, ctx)
+			var sourceDir *dagger.Directory
+			if inputArgs["sourceDir"] != nil {
+				err = json.Unmarshal([]byte(inputArgs["sourceDir"]), &sourceDir)
+				if err != nil {
+					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg sourceDir", err))
+				}
+			}
+			return (*Pipeline).RunTests(&parent, ctx, sourceDir)
 		case "SemVerBump":
 			var parent Pipeline
 			err = json.Unmarshal(parentJSON, &parent)
