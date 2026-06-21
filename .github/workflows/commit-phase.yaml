@@ -1,59 +1,59 @@
 name: Commit Phase
 
 on:
-    workflow_call:
-      inputs:
-        source-dir:
-                required: false
-                default: "."
-                type: string
-        image-name:
-                required: false
-                default: ""
-                type: string
-      secrets:
-        REGISTRY_PASSWORD:
-                required: false
-        DAGGER_CLOUD_TOKEN:
-                required: false
-      outputs:
-        image-digest:
-                description: "The full image digest (sha256:...)"
-                value: ${{ jobs.commit-phase.outputs.image-digest }}
+  workflow_call:
+    inputs:
+      source-dir:
+        required: false
+        default: "."
+        type: string
+      image-name:
+        required: false
+        default: ""
+        type: string
+    secrets:
+      REGISTRY_PASSWORD:
+        required: false
+      DAGGER_CLOUD_TOKEN:
+        required: false
+    outputs:
+      image-digest:
+        description: "The full image digest (sha256:...)"
+        value: ${{ jobs.commit-phase.outputs.image-digest }}
 
 jobs:
-    commit-phase:
-      runs-on: ubuntu-latest
-      outputs:
-        image-digest: ${{ steps.commit.outputs.image-digest }}
-      steps:
-        - name: Hämta app
-                uses: actions/checkout@v4
-                with:
-                    path: app
-                    sparse-checkout: |
-                        ${{ inputs.source-dir }}
+  commit-phase:
+    runs-on: ubuntu-latest
+    outputs:
+      image-digest: ${{ steps.commit.outputs.image-digest }}
+    steps:
+      - name: Hämta app
+        uses: actions/checkout@v4
+        with:
+          path: app
+          sparse-checkout: |
+            ${{ inputs.source-dir }}
 
-        - name: Hämta Pipeline
-                uses: actions/checkout@v4
-                with:
-                    repository: simonbrundin/deployment-pipeline
-                    ref: refs/tags/v1.6
-                    path: pipeline
+      - name: Hämta Pipeline
+        uses: actions/checkout@v4
+        with:
+          repository: simonbrundin/deployment-pipeline
+          ref: refs/tags/v1.6
+          path: pipeline
 
-        - name: Kör Commit Phase
-                id: commit
-                uses: dagger/dagger-for-github@v8.3.0
-                with:
-                    verb: call
-                    module: ./pipeline/dagger-modules/pipeline
-                    args: |
-                        commit-phase
-                        --source-dir app/${{ inputs.source-dir }}
-                        --registry-address ${{ vars.REGISTRY_ADDRESS }}
-                        --image-name ${{ inputs.image-name || github.event.repository.name }}
-                        --username ${{ vars.REGISTRY_USERNAME }}
-                        --secret ${{ secrets.REGISTRY_PASSWORD }}
-                        --multi-arch true
-                env:
-                    DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}
+      - name: Kör Commit Phase
+        id: commit
+        uses: dagger/dagger-for-github@v8.3.0
+        with:
+          verb: call
+          module: ./pipeline/dagger-modules/pipeline
+          args: |
+            commit-phase
+            --source-dir app/${{ inputs.source-dir }}
+            --registry-address ${{ vars.REGISTRY_ADDRESS }}
+            --image-name ${{ inputs.image-name || github.event.repository.name }}
+            --username ${{ vars.REGISTRY_USERNAME }}
+            --secret ${{ secrets.REGISTRY_PASSWORD }}
+            --multi-arch true
+        env:
+          DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}
