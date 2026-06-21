@@ -13,15 +13,19 @@ on:
         description: "Build context (t.ex. frontend/)"
         type: string
         default: "."
+      test-command:
+        description:
+          "Shell-kommando att installera dependencies och köra tester"
+        type: string
 jobs:
-  # unit-tests:
-  #   name: Kör Unit-tester
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #     - name: Run unit tests
-  #       run: echo "Lägg till testkommando här"
+  unit-tests:
+    name: Kör Unit-tester
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run unit tests
+        run: ${{ inputs.test-command }}
 
   build-image:
     name: Bygg image från Dockerfile
