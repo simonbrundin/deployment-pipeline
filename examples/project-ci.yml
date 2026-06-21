@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  # ===== COMMIT PHASE =====
+  build-and-sign:
+    uses: ./.github/workflows/build-and-sign.yml
+    with:
+      dockerfile: Dockerfile
+      context: .
+      lint-command: golangci-lint run ./...
+      test-command: go test -race ./...
+      go-version: "1.23"
+      platforms: linux/amd64,linux/arm64
+    secrets:
+      COSIGN_SIGNING_KEY: ${{ secrets.COSIGN_SIGNING_KEY }}
+      COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+
+  # ===== ACCEPTANCE PHASE =====
+  acceptance:
+    name: Acceptance Tests
+    needs: build-and-sign
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    environment:
+      name: ephemeral/pr-${{ github.event.pull_request.number }}
+      url: https://pr-${{ github.event.pull_request.number }}.ephemeral.internal
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Flux
+        uses: fluxcd/flux2/actions/action@main
+        with:
+          version: latest
+
+      - name: Setup kubeconfig
+        run: |
+          cat << 'EOF' > kubeconfig
+          ${{ secrets.KUBECONFIG }}
+          EOF
+          echo "KUBECONFIG=$(pwd)/kubeconfig" >> $GITHUB_OUTPUT
+
+      - name: Create ephemeral namespace
+        run: |
+          flux create kustomization \
+            pr-${{ github.event.pull_request.number }} \
+            --namespace=flux-system \
+            --target-namespace=${{ github.event.pull_request.head.repo.name }}-pr-${{ github.event.pull_request.number }} \
+            --source=gitrepository/flux-system \
+            --path=environments/ephemeral/prs/${{ github.event.pull_request.number }} \
+            --prune=true \
+            --wait=true
+
+      - name: Wait for deployment
+        run: |
+          echo "Waiting for deployment to be ready..."
+          kubectl rollout status deployment \
+            --namespace=${{ github.event.pull_request.head.repo.name }}-pr-${{ github.event.pull_request.number }} \
+            --timeout=300s
+
+      - name: Run acceptance tests
+        run: |
+          ACCEPTANCE_IMAGE="${{ needs.build-and-sign.outputs.image-tag }}"
+          # Replace manifest placeholders with actual image
+          envsubst < manifests/deployment.yaml | kubectl apply -f -
+
+          # Run test suite
+          go test -v -tags=acceptance ./acceptance/...
+
+      - name: Approve artifact (thumbs up)
+        run: |
+          echo "✅ Artifact approved for PR #${PR_NUM}"
+          echo "Image: ${{ needs.build-and-sign.outputs.image-tag }}"
+          echo "Digest: ${{ needs.build-and-sign.outputs.image-digest }}"
+        env:
+          PR_NUM: ${{ github.event.pull_request.number }}
+
+      - name: Cleanup ephemeral resources
+        if: always()
+        run: |
+          flux delete kustomization \
+            pr-${{ github.event.pull_request.number }} \
+            --namespace=flux-system \
+            --silent

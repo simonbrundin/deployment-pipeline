@@ -1,0 +1,413 @@
+name: Build and Sign
+
+on:
+  workflow_call:
+    inputs:
+      dockerfile:
+        description: "Path to Dockerfile (relative to repo root)"
+        type: string
+        default: "Dockerfile"
+      context:
+        description: "Docker build context (relative to repo root)"
+        type: string
+        default: "."
+      build-args:
+        description: 'Docker build arguments (JSON array, e.g. ''["KEY=value"]'')'
+        type: string
+        default: ""
+      lint-command:
+        description: "Lint command to run (auto-detected if empty)"
+        type: string
+        default: ""
+      test-command:
+        description: "Unit test command to run (auto-detected if empty)"
+        type: string
+        default: ""
+      go-version:
+        description: "Go version for Go projects"
+        type: string
+        default: "1.23"
+      node-version:
+        description: "Node.js version for Node projects"
+        type: string
+        default: "20"
+      python-version:
+        description: "Python version for Python projects"
+        type: string
+        default: "3.12"
+      rust-version:
+        description: "Rust version for Rust projects"
+        type: string
+        default: "1.78"
+      platforms:
+        description: "Comma-separated list of platforms to build for"
+        type: string
+        default: "linux/amd64,linux/arm64"
+      cosign-tags:
+        description: "Additional tags for cosign (JSON array)"
+        type: string
+        default: "[]"
+
+    outputs:
+      image-digest:
+        description: "SHA256 digest of the built image"
+        value: ${{ jobs.build.outputs.image-digest }}
+      image-tag:
+        description: "Full image tag with digest"
+        value: ${{ jobs.build.outputs.image-tag }}
+      image-ref:
+        description: "Image reference for the signed image"
+        value: ${{ jobs.build.outputs.image-ref }}
+
+    secrets:
+      COSIGN_SIGNING_KEY:
+        description: "Cosign signing private key"
+        required: true
+      COSIGN_PASSWORD:
+        description: "Cosign private key password"
+        required: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  detect-project:
+    name: Detect Project Type
+    runs-on: ubuntu-latest
+    outputs:
+      type: ${{ steps.detect.outputs.type }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect project type
+        id: detect
+        run: |
+          if [ -f "go.mod" ]; then
+            echo "type=go" >> $GITHUB_OUTPUT
+          elif [ -f "package.json" ]; then
+            echo "type=node" >> $GITHUB_OUTPUT
+          elif [ -f "pyproject.toml" ] || [ -f "setup.py" ] || [ -f "requirements.txt" ]; then
+            echo "type=python" >> $GITHUB_OUTPUT
+          elif [ -f "Cargo.toml" ]; then
+            echo "type=rust" >> $GITHUB_OUTPUT
+          else
+            echo "type=unknown" >> $GITHUB_OUTPUT
+          fi
+
+  cache-deps:
+    name: Cache Dependencies
+    needs: detect-project
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - type: go
+            cache-key: go
+            path: ~/go/pkg/mod
+          - type: node
+            cache-key: npm
+            path: ~/.npm
+          - type: python
+            cache-key: pip
+            path: ~/.cache/pip
+          - type: rust
+            cache-key: cargo
+            path: ~/.cargo/registry
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        if: matrix.type == 'go'
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.go-version }}
+          cache-dependency-path: |
+            go.sum
+            go.mod
+
+      - name: Setup Node.js
+        if: matrix.type == 'node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Setup Python
+        if: matrix.type == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: pip
+
+      - name: Setup Rust
+        if: matrix.type == 'rust'
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ inputs.rust-version }}
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ matrix.path }}
+          key: ${{ matrix.cache-key }}-${{ runner.os }}-${{ hashFiles('**/go.sum', '**/package-lock.json', '**/requirements*.txt', '**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.cache-key }}-${{ runner.os }}-
+
+      # Pre-fetch Go modules
+      - name: Download Go modules
+        if: matrix.type == 'go'
+        run: go mod download
+
+      # Pre-fetch npm packages
+      - name: Install npm dependencies
+        if: matrix.type == 'node'
+        run: npm ci
+
+      # Pre-fetch Python packages
+      - name: Install Python dependencies
+        if: matrix.type == 'python'
+        run: pip install -e . --quiet
+
+  lint:
+    name: Lint
+    needs: detect-project
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        if: needs.detect-project.outputs.type == 'go'
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.go-version }}
+          cache-dependency-path: go.mod
+
+      - name: Setup Node.js
+        if: needs.detect-project.outputs.type == 'node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+
+      - name: Setup Python
+        if: needs.detect-project.outputs.type == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: pip
+
+      - name: Setup Rust
+        if: needs.detect-project.outputs.type == 'rust'
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ inputs.rust-version }}
+
+      - name: Lint Go
+        if: needs.detect-project.outputs.type == 'go'
+        run: |
+          LINT_CMD="${{ inputs.lint-command }}"
+          if [ -z "$LINT_CMD" ]; then
+            LINT_CMD="golangci-lint run ./..."
+          fi
+          $LINT_CMD
+
+      - name: Lint Node.js
+        if: needs.detect-project.outputs.type == 'node'
+        run: |
+          LINT_CMD="${{ inputs.lint-command }}"
+          if [ -z "$LINT_CMD" ]; then
+            LINT_CMD="npm run lint"
+          fi
+          $LINT_CMD
+
+      - name: Lint Python
+        if: needs.detect-project.outputs.type == 'python'
+        run: |
+          LINT_CMD="${{ inputs.lint-command }}"
+          if [ -z "$LINT_CMD" ]; then
+            LINT_CMD="ruff check ."
+          fi
+          $LINT_CMD
+
+      - name: Lint Rust
+        if: needs.detect-project.outputs.type == 'rust'
+        run: |
+          LINT_CMD="${{ inputs.lint-command }}"
+          if [ -z "$LINT_CMD" ]; then
+            LINT_CMD="cargo clippy -- -D warnings"
+          fi
+          $LINT_CMD
+
+  test:
+    name: Unit Tests
+    needs: detect-project
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        if: needs.detect-project.outputs.type == 'go'
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.go-version }}
+          cache-dependency-path: go.mod
+
+      - name: Setup Node.js
+        if: needs.detect-project.outputs.type == 'node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+
+      - name: Setup Python
+        if: needs.detect-project.outputs.type == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: pip
+
+      - name: Setup Rust
+        if: needs.detect-project.outputs.type == 'rust'
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ inputs.rust-version }}
+
+      - name: Test Go
+        if: needs.detect-project.outputs.type == 'go'
+        run: |
+          TEST_CMD="${{ inputs.test-command }}"
+          if [ -z "$TEST_CMD" ]; then
+            TEST_CMD="go test ./..."
+          fi
+          $TEST_CMD
+
+      - name: Test Node.js
+        if: needs.detect-project.outputs.type == 'node'
+        run: |
+          TEST_CMD="${{ inputs.test-command }}"
+          if [ -z "$TEST_CMD" ]; then
+            TEST_CMD="npm test"
+          fi
+          $TEST_CMD
+
+      - name: Test Python
+        if: needs.detect-project.outputs.type == 'python'
+        run: |
+          TEST_CMD="${{ inputs.test-command }}"
+          if [ -z "$TEST_CMD" ]; then
+            TEST_CMD="python -m pytest"
+          fi
+          $TEST_CMD
+
+      - name: Test Rust
+        if: needs.detect-project.outputs.type == 'rust'
+        run: |
+          TEST_CMD="${{ inputs.test-command }}"
+          if [ -z "$TEST_CMD" ]; then
+            TEST_CMD="cargo test"
+          fi
+          $TEST_CMD
+
+  build:
+    name: Build and Sign
+    needs: [detect-project, lint, test]
+    runs-on: ubuntu-latest
+    outputs:
+      image-digest: ${{ steps.build.outputs.image-digest }}
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-ref: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=,suffix=,format=short
+            type=sha,prefix=,suffix=,format=long
+            type=ref,event=branch
+            type=ref,event=pr
+
+      - name: Convert build-args to list
+        id: build-args
+        run: |
+          if [ -n "${{ inputs.build-args }}" ]; then
+            echo "args=${{ inputs.build-args }}" >> $GITHUB_OUTPUT
+          else
+            echo "args=[]" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.dockerfile }}
+          platforms: ${{ inputs.platforms }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          build-args: ${{ steps.build-args.outputs.args }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+          outputs: type=image,digest=${{ steps.meta.outputs.tags }}
+
+      - name: Generate SHA256 digest
+        id: digest
+        run: |
+          DIGEST=$(echo "${{ steps.build.outputs.image-digest }}" | cut -d@ -f2)
+          echo "sha256=$DIGEST" >> $GITHUB_OUTPUT
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign image
+        env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          TAGS: ${{ steps.meta.outputs.tags }}
+          ADDITIONAL_TAGS: ${{ inputs.cosign-tags }}
+        run: |
+          # Sign each tag
+          for tag in $(echo "$TAGS" | tr ',' '\n'); do
+            cosign sign \
+              --yes \
+              --rekor-url=https://rekor.sigstore.dev \
+              $tag
+          done
+
+      - name: Verify signature
+        run: |
+          # Verify all signed tags
+          for tag in $(echo "${{ steps.meta.outputs.tags }}" | tr ',' '\n'); do
+            echo "Verifying: $tag"
+            cosign verify \
+              --rekor-url=https://rekor.sigstore.dev \
+              --certificate-identity-regexp="https://github.com/${{ github.repository }}" \
+              --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
+              $tag
+          done
