@@ -2,10 +2,10 @@ name: CI
 on:
   workflow_call:
     inputs:
-      dockerfile-path:
-        description: "Sökväg till mappen där Dockerfile finns"
+      dockerfile:
+        description: "Sökväg till Dockerfile (t.ex. frontend/Dockerfile)"
         type: string
-        default: "."
+        default: "Dockerfile"
 jobs:
   # unit-tests:
   #   name: Kör Unit-tester
@@ -30,8 +30,8 @@ jobs:
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ${{ inputs.dockerfile-path }}
-          file: ${{ inputs.dockerfile-path }}/${{ inputs.dockerfile-name }}
+          context: .
+          file: ${{ inputs.dockerfile }}
           push: false
           load: true
           cache-from: type=gha
@@ -58,8 +58,8 @@ jobs:
       - name: Push image
         uses: docker/build-push-action@v5
         with:
-          context: ${{ inputs.dockerfile-path }}
-          file: ${{ inputs.dockerfile-path }}/${{ inputs.dockerfile-name }}
+          context: .
+          file: ${{ inputs.dockerfile }}
           push: true
           tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
           cache-from: type=gha
