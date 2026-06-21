@@ -6,6 +6,10 @@ on:
         description: "Sökväg till Dockerfile (t.ex. frontend/Dockerfile)"
         type: string
         default: "Dockerfile"
+      dockerfile-context:
+        description: "Build context (t.ex. frontend/)"
+        type: string
+        default: "."
 jobs:
   # unit-tests:
   #   name: Kör Unit-tester
@@ -30,7 +34,7 @@ jobs:
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ${{ inputs.dockerfile-context }}
           file: ${{ inputs.dockerfile }}
           push: false
           load: true
@@ -58,7 +62,7 @@ jobs:
       - name: Push image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ${{ inputs.dockerfile-context }}
           file: ${{ inputs.dockerfile }}
           push: true
           tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
