@@ -36,9 +36,6 @@ jobs:
         with:
           verb: call
           module: ./pipeline/dagger-modules/pipeline
-          args: |
-            acceptance-phase
-            --source-dir=${{ inputs.source-dir }}
-            --image-digest ${{ inputs.image-digest }}
+          args: acceptance-phase --source-dir=${{ inputs.source-dir }} --image-digest=${{ inputs.image-digest }}
         env:
           DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}
