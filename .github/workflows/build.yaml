@@ -6,10 +6,6 @@ on:
         description: "Sökväg till mappen där Dockerfile finns"
         type: string
         default: "."
-      dockerfile-name:
-        description: "Namn på Dockerfile"
-        type: string
-        default: "Dockerfile"
 jobs:
   # unit-tests:
   #   name: Kör Unit-tester
@@ -23,6 +19,9 @@ jobs:
   build-image:
     name: Bygg image från Dockerfile
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,6 +41,9 @@ jobs:
     name: Publicera image på registry
     runs-on: ubuntu-latest
     needs: build-image
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
