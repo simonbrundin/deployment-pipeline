@@ -9,7 +9,8 @@ on:
         default: "."
 
 jobs:
-  test:
+  run-bun-tests:
+    name: Kör tester via Bun
     runs-on: ubuntu-latest
 
     defaults:
@@ -31,7 +32,8 @@ jobs:
           path: |
             ~/.bun/install/cache
             ${{ inputs.package-json-path }}/node_modules
-          key: ${{ runner.os }}-bun-${{ inputs.package-json-path }}-${{
+          key:
+            ${{ runner.os }}-bun-${{ inputs.package-json-path }}-${{
             hashFiles(format('{0}/bun.lockb', inputs.package-json-path)) }}
           restore-keys: |
             ${{ runner.os }}-bun-${{ inputs.package-json-path }}-
