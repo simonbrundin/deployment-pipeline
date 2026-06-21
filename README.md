@@ -11,6 +11,7 @@ Paketerar koden och verifierar att den är bra nog att lansera
    4. Enhetstester körs
    5. Artifact (image) byggs - _cachas_
    6. Image signeras
+   7. Image publiceras i registry
 2. Acceptance Phase - Trigger (Commit Phase passed)
    1. Produktionslik miljö sätts upp
    2. Acceptanstester körs
