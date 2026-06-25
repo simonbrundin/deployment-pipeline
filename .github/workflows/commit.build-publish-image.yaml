@@ -1,10 +1,22 @@
 name: Bygg och publicera image
 on:
   workflow_call:
+    outputs:
+      image:
+        description: "Image reference with digest (t.ex. ghcr.io/user/repo@sha256:…)"
+        value: ${{ jobs.publish-image.outputs.image }}
     secrets:
       REGISTRY_TOKEN:
         required: false
     inputs:
+      registry:
+        description: "Full registry path (t.ex. ghcr.io/simonbrundin/plan)"
+        type: string
+        required: true
+      registry-username:
+        description: "Username for registry login"
+        type: string
+        default: "${{ github.actor }}"
       dockerfile:
         description: "Sökväg till Dockerfile (t.ex. frontend/Dockerfile)"
         type: string
@@ -42,6 +54,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      image: ${{ inputs.registry }}@${{ steps.push.outputs.digest }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,13 +67,17 @@ jobs:
           if [ -z "$TOKEN" ]; then
             TOKEN="${{ secrets.GITHUB_TOKEN }}"
           fi
-          echo "$TOKEN" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo "$TOKEN" | docker login \
+            ${{ inputs.registry }} \
+            -u ${{ inputs.registry-username }} \
+            --password-stdin
       - name: Push image
+        id: push
         uses: docker/build-push-action@v5
         with:
           context: ${{ inputs.dockerfile-context }}
           file: ${{ inputs.dockerfile }}
           push: true
-          tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
+          tags: ${{ inputs.registry }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
