@@ -25,6 +25,10 @@ on:
         description: "Build context (t.ex. frontend/)"
         type: string
         default: "."
+      platforms:
+        description: "Build platforms (e.g. linux/amd64,linux/arm64)"
+        type: string
+        default: "linux/amd64"
 jobs:
   build-image:
     name: Bygg image från Dockerfile
@@ -42,6 +46,7 @@ jobs:
         with:
           context: ${{ inputs.dockerfile-context }}
           file: ${{ inputs.dockerfile }}
+          platforms: ${{ inputs.platforms }}
           push: false
           load: true
           cache-from: type=gha
@@ -77,6 +82,7 @@ jobs:
         with:
           context: ${{ inputs.dockerfile-context }}
           file: ${{ inputs.dockerfile }}
+          platforms: ${{ inputs.platforms }}
           push: true
           tags: ${{ inputs.registry }}:${{ github.sha }}
           cache-from: type=gha
