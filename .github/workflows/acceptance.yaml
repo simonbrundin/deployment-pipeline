@@ -1,0 +1,149 @@
+name: Acceptance
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+  workflow_dispatch:
+    inputs:
+      pr-manifests-path:
+        description: >
+          Sökväg till manifestfiler (t.ex. manifests/, kubernetes/)
+        type: string
+        required: true
+        default: "manifests"
+      pr-number:
+        description: >
+          PR-nummer för ephemeral miljö
+        type: number
+        required: false
+
+jobs:
+  build-image:
+    name: Bygg och publicera image
+    uses: ./.github/workflows/commit.build-publish-image.yaml
+    with:
+      registry: ghcr.io/${{ github.repository }}
+      dockerfile: Dockerfile
+      dockerfile-context: .
+    secrets:
+      REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  acceptance:
+    name: Skapa acceptance PR
+    needs: build-image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      pr_url: ${{ steps.get-pr-number.outputs.pr_url }}
+
+    steps:
+      - name: Hämta manifestfiler
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            environments
+          sparse-checkout-cone-mode: false
+
+      - name: Hämta PR-nummer
+        id: get-pr-number
+        run: |
+          if [ '${{ github.event_name }}' = workflow_dispatch ]; then
+            PR_NUM='${{ github.event.inputs.pr-number }}'
+            if [ -z "$PR_NUM" ] || [ "$PR_NUM" = "0" ]; then
+              PR_NUM="auto-${{ github.run_id }}"
+            fi
+          else
+            PR_NUM='${{ github.event.pull_request.number }}'
+          fi
+          BRANCH_NAME="acceptance/pr-$PR_NUM"
+          echo "pr_number=$PR_NUM" >> $GITHUB_OUTPUT
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          SERVER='${{ github.server_url }}'
+          REPO='${{ github.repository }}'
+          PR_URL="$SERVER/$REPO/pull/$PR_NUM"
+          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+
+      - name: Hämta manifests-sökväg
+        id: get-manifests-path
+        run: |
+          if [ '${{ github.event_name }}' = workflow_dispatch ]; then
+            MANIFESTS='${{ github.event.inputs.pr-manifests-path }}'
+          else
+            MANIFESTS='manifests'
+          fi
+          echo "path=$MANIFESTS" >> $GITHUB_OUTPUT
+
+      - name: Skapa ephemeral PR-mapp
+        run: |
+          PR_NUM='${{ steps.get-pr-number.outputs.pr_num }}'
+          mkdir -p "environments/ephemeral/prs/pr-$PR_NUM"
+
+      - name: Kopiera manifestfiler
+        run: |
+          PR_NUM='${{ steps.get-pr-number.outputs.pr_num }}'
+          SRC='${{ steps.get-manifests-path.outputs.path }}'
+          DEST="environments/ephemeral/prs/pr-$PR_NUM"
+          if [ -d "$SRC" ]; then
+            cp -r "$SRC"/* "$DEST/"
+          else
+            echo "Varning: Sökvägen '$SRC' finns inte"
+          fi
+
+      - name: Uppdatera image i manifest
+        run: |
+          PR_NUM='${{ steps.get-pr-number.outputs.pr_num }}'
+          DEST="environments/ephemeral/prs/pr-$PR_NUM"
+          IMAGE='${{ needs.build-image.outputs.image }}'
+          if [ -d "$DEST" ]; then
+            find "$DEST" \
+              -name "*.yaml" -o -name "*.yml" | while read -r file; do
+              sed -i "s|image:.*|image: $IMAGE|g" "$file"
+            done
+          fi
+
+      - name: Visa ändringar
+        run: |
+          echo "=== Ändrade filer ==="
+          git status
+          echo ""
+          echo "=== Innehåll ==="
+          PR_NUM='${{ steps.get-pr-number.outputs.pr_num }}'
+          DEST="environments/ephemeral/prs/pr-$PR_NUM"
+          ls -la "$DEST" || echo "Mappen är tom eller saknas"
+
+      - name: Commit och push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add environments/
+          git diff --staged --quiet || git commit -m "Acceptance: Uppdatera PR"
+          BRANCH='${{ steps.get-pr-number.outputs.branch_name }}'
+          git push -u origin "$BRANCH" || true
+
+      - name: Skapa eller uppdatera PR
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ steps.get-pr-number.outputs.branch_name }}
+          delete-branch: false
+          title: >
+            Acceptance: PR
+            ${{ steps.get-pr-number.outputs.pr_num }}
+          body: |
+            ## Acceptance Deployment
+
+            **Image:** `${{ needs.build-image.outputs.image }}`
+
+            Manifestfiler kopierade från: `${{ steps.get-manifests-path.outputs.path }}`
+
+            ---
+            _Skapad av GitHub Actions_
+          labels: |
+            acceptance
+            automated
+          base: main
