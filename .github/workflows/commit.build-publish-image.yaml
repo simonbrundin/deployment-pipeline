@@ -50,8 +50,8 @@ jobs:
           file: ${{ inputs.dockerfile }}
           platforms: ${{ inputs.platforms }}
           push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          #cache-from: type=gha
+          #cache-to: type=gha,mode=max
 
   publish-image:
     name: Publicera image på registry
@@ -88,5 +88,5 @@ jobs:
           platforms: ${{ inputs.platforms }}
           push: true
           tags: ${{ inputs.registry }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          #cache-from: type=gha
+          #cache-to: type=gha,mode=max
